@@ -1,0 +1,23 @@
+:root {
+  /* colours */
+  --clay-rose: #F9E6E8;
+  --sage-mint: #D7F2E3;
+  --sky-powder: #D9EDFF;
+  --lavender: #E9E5FF;
+  --sun-peach: #FFE8D2;
+  --ink: #233044;
+  --ink-soft: rgba(35, 48, 68, .6);
+
+  /* elevation + blur */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, .06);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, .08);
+
+  /* motion */
+  --ease-float: cubic-bezier(.35, .01, .27, 1);
+
+  /* radii */
+  --r-lg: 16px;
+
+  /* sizing */
+  --safe-w: 640; /* logical w, keeps aspect ratio maths tidy */
+}

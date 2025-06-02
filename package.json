@@ -1,0 +1,28 @@
+{
+  "name": "kana-pop",
+  "version": "1.0.0",
+  "description": "A pastel-cozy Japanese kana learning web game",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vite",
+    "dev-win": "vite --force && exit 0",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "japanese",
+    "kana",
+    "hiragana",
+    "katakana",
+    "learning",
+    "game",
+    "web",
+    "pwa"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "vite": "^6.3.5",
+    "workbox-cli": "^7.0.0"
+  }
+}

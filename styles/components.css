@@ -1,0 +1,176 @@
+/* 
+ * Components - reusable, themable UI elements
+ */
+
+/* Button styles */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  background: white;
+  color: var(--ink);
+  border: none;
+  border-radius: var(--r-lg);
+  font-weight: 700;
+  font-size: clamp(16px, 4vw, 18px);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s var(--ease-float), box-shadow 0.2s var(--ease-float);
+}
+
+.button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.button:active {
+  transform: translateY(0);
+}
+
+/* Icon button */
+.icon-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: white;
+  border: none;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s var(--ease-float), box-shadow 0.2s var(--ease-float);
+}
+
+.icon-button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.icon-button svg {
+  width: 20px;
+  height: 20px;
+  color: var(--ink);
+}
+
+/* Timer pill */
+.timer-pill {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background: white;
+  border-radius: 20px;
+  box-shadow: var(--shadow-sm);
+  font-weight: 700;
+}
+
+.timer-pill svg {
+  width: 16px;
+  height: 16px;
+  margin-right: 0.5rem;
+  color: var(--ink);
+}
+
+/* Heart icon states */
+.heart {
+  width: 24px;
+  height: 24px;
+  transition: transform 0.3s var(--ease-float);
+}
+
+.heart.active {
+  color: #FF6B6B;
+  transform: scale(1.1);
+}
+
+.heart.inactive {
+  color: var(--ink-soft);
+  opacity: 0.5;
+}
+
+/* Settings toggle */
+.toggle {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
+}
+
+.toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--ink-soft);
+  transition: .4s;
+  border-radius: 34px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+  background-color: var(--ink);
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(26px);
+}
+
+/* Settings option */
+.settings-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.settings-option-label {
+  font-weight: 600;
+}
+
+/* Modal theming */
+.modal-overlay {
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+.modal-content {
+  background-color: white;
+  box-shadow: var(--shadow-lg);
+}
+
+.modal-title {
+  font-size: clamp(20px, 5vw, 24px);
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+}
+
+/* Progress ribbon theming */
+.progress-ribbon {
+  background-color: var(--lavender);
+}
+
+/* Bubble text styling */
+.kana-text {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-weight: 500;
+  font-size: clamp(24px, 8vw, 32px);
+}
