@@ -21,7 +21,18 @@ class AudioService {
     try {
       window.AudioContext = window.AudioContext || window.webkitAudioContext;
       this.audioContext = new AudioContext();
+      
+      // Ensure the audio context is running (it might be suspended on some browsers)
+      if (this.audioContext.state === 'suspended') {
+        this.audioContext.resume().then(() => {
+          console.log('AudioContext resumed successfully');
+        }).catch(err => {
+          console.warn('Failed to resume AudioContext:', err);
+        });
+      }
+      
       this.initialized = true;
+      console.log('Audio service initialized successfully');
     } catch (error) {
       console.error('Web Audio API is not supported in this browser', error);
     }
@@ -40,31 +51,47 @@ class AudioService {
     }
     
     if (!this.audioContext) {
+      console.warn(`Cannot preload audio '${id}': AudioContext not initialized`);
       return false;
     }
 
     // Skip if already loaded
     if (this.buffers.has(id)) {
+      console.log(`Audio '${id}' already loaded, skipping`);
       return true;
     }
 
     // Try the main URL first, then fallbacks
     const urls = [url, ...fallbacks];
+    console.log(`Attempting to load audio '${id}' with URLs:`, urls);
     
     for (const audioUrl of urls) {
       try {
+        console.log(`Fetching: ${audioUrl}`);
         const response = await fetch(audioUrl);
-        const arrayBuffer = await response.arrayBuffer();
-        const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
         
-        this.buffers.set(id, audioBuffer);
-        return true;
-      } catch (error) {
-        console.warn(`Failed to load audio: ${audioUrl}`, error);
+        if (!response.ok) {
+          console.warn(`HTTP error ${response.status} loading audio: ${audioUrl}`);
+          continue;
+        }
+        
+        const arrayBuffer = await response.arrayBuffer();
+        console.log(`Successfully fetched ${audioUrl}, decoding audio...`);
+        
+        try {
+          const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+          this.buffers.set(id, audioBuffer);
+          console.log(`Successfully loaded audio: ${id}`);
+          return true;
+        } catch (decodeError) {
+          console.warn(`Failed to decode audio: ${audioUrl}`, decodeError);
+        }
+      } catch (fetchError) {
+        console.warn(`Failed to fetch audio: ${audioUrl}`, fetchError);
       }
     }
     
-    console.error(`Could not load audio: ${id}`);
+    console.error(`Could not load audio: ${id} after trying all URLs`);
     return false;
   }
 
