@@ -160,7 +160,15 @@ export class CanvasRenderer {
       this.ctx.textAlign = 'center';
       this.ctx.textBaseline = 'middle';
       this.ctx.fillStyle = 'var(--ink)';
+      
+      // Add shadow for better readability against pale bubbles
+      this.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+      this.ctx.shadowBlur = 4;
       this.ctx.fillText(bubble.kana, x, y);
+      
+      // Reset shadow to prevent affecting other drawings
+      this.ctx.shadowColor = 'transparent';
+      this.ctx.shadowBlur = 0;
     }
     
     // Restore context

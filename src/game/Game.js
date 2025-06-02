@@ -60,10 +60,10 @@ export class Game {
     AudioService.init();
     
     // Preload common sound effects
-    AudioService.preload('pop', 'assets/audio/sfx/pop.ogg', ['assets/audio/sfx/pop.m4a']);
-    AudioService.preload('miss', 'assets/audio/sfx/miss.ogg', ['assets/audio/sfx/miss.m4a']);
-    AudioService.preload('gameover', 'assets/audio/sfx/gameover.ogg', ['assets/audio/sfx/gameover.m4a']);
-    AudioService.preload('levelup', 'assets/audio/sfx/levelup.ogg', ['assets/audio/sfx/levelup.m4a']);
+    AudioService.preload('pop', `${import.meta.env.BASE_URL}assets/audio/sfx/pop.ogg`, [`${import.meta.env.BASE_URL}assets/audio/sfx/pop.m4a`]);
+    AudioService.preload('miss', `${import.meta.env.BASE_URL}assets/audio/sfx/miss.ogg`, [`${import.meta.env.BASE_URL}assets/audio/sfx/miss.m4a`]);
+    AudioService.preload('gameover', `${import.meta.env.BASE_URL}assets/audio/sfx/gameover.ogg`, [`${import.meta.env.BASE_URL}assets/audio/sfx/gameover.m4a`]);
+    AudioService.preload('levelup', `${import.meta.env.BASE_URL}assets/audio/sfx/levelup.ogg`, [`${import.meta.env.BASE_URL}assets/audio/sfx/levelup.m4a`]);
   }
   
   /**
@@ -153,9 +153,14 @@ export class Game {
     
     // Trigger haptic feedback
     if (this.settings.haptics) {
+      // Using Promise-based API that continues the chain even if vibration fails
       HapticsService.vibrate(
         victory ? HapticsService.patterns.success : HapticsService.patterns.gameOver
-      );
+      )
+        .catch(err => {
+          // Catch any unexpected errors to prevent breaking the promise chain
+          console.warn('Haptic feedback error:', err);
+        });
     }
     
     // Emit game over event
@@ -216,11 +221,11 @@ export class Game {
     const now = Date.now() / 1000; // seconds
     const config = this.stageManager.getCurrentStageConfig();
     
-    console.log(`[DEBUG] Time: ${this.timeRemaining.toFixed(1)}s, Bubbles: ${this.bubbles.length}, LastSpawn: ${(now - this.lastSpawnTime).toFixed(2)}s ago`);
+    if (import.meta.env.DEV) console.log(`[DEBUG] Time: ${this.timeRemaining.toFixed(1)}s, Bubbles: ${this.bubbles.length}, LastSpawn: ${(now - this.lastSpawnTime).toFixed(2)}s ago`);
     
     // Log bubble positions
     if (this.bubbles.length > 0) {
-      console.log(`[DEBUG] Bubble positions:`, this.bubbles.map(b => ({x: b.x.toFixed(2), y: b.y.toFixed(2), active: b.active, popped: b.popped})));
+      if (import.meta.env.DEV) console.log(`[DEBUG] Bubble positions:`, this.bubbles.map(b => ({x: b.x.toFixed(2), y: b.y.toFixed(2), active: b.active, popped: b.popped})));
     }
     
     // Update existing bubbles
@@ -230,7 +235,7 @@ export class Game {
       
       // Check if bubble has moved off the top of the screen
       if (!onScreen && bubble.active && !bubble.popped) {
-        console.log(`[DEBUG] Bubble missed: ${bubble.kana} (${bubble.x.toFixed(2)}, ${bubble.y.toFixed(2)})`);
+        if (import.meta.env.DEV) console.log(`[DEBUG] Bubble missed: ${bubble.kana} (${bubble.x.toFixed(2)}, ${bubble.y.toFixed(2)})`);
         this.missBubble(bubble);
       }
       
@@ -240,17 +245,17 @@ export class Game {
     
     // Spawn new bubbles based on spawn rate
     if (now - this.lastSpawnTime > config.spawnRate && this.bubbles.length < config.bubbleCount) {
-      console.log(`[DEBUG] Attempting to spawn bubble. Time since last: ${(now - this.lastSpawnTime).toFixed(2)}s, Current count: ${this.bubbles.length}, Max: ${config.bubbleCount}`);
+      if (import.meta.env.DEV) console.log(`[DEBUG] Attempting to spawn bubble. Time since last: ${(now - this.lastSpawnTime).toFixed(2)}s, Current count: ${this.bubbles.length}, Max: ${config.bubbleCount}`);
       const bubble = this.stageManager.createBubble(this.stats);
       if (bubble) {
-        console.log(`[DEBUG] Spawned bubble: ${bubble.kana} at (${bubble.x.toFixed(2)}, ${bubble.y.toFixed(2)})`);
+        if (import.meta.env.DEV) console.log(`[DEBUG] Spawned bubble: ${bubble.kana} at (${bubble.x.toFixed(2)}, ${bubble.y.toFixed(2)})`);
         this.bubbles.push(bubble);
         this.lastSpawnTime = now;
       } else {
-        console.log(`[DEBUG] Failed to spawn bubble`);
+        if (import.meta.env.DEV) console.log(`[DEBUG] Failed to spawn bubble`);
       }
     } else {
-      console.log(`[DEBUG] Not spawning bubble. Time since last: ${(now - this.lastSpawnTime).toFixed(2)}s, Current count: ${this.bubbles.length}, Max: ${config.bubbleCount}`);
+      if (import.meta.env.DEV) console.log(`[DEBUG] Not spawning bubble. Time since last: ${(now - this.lastSpawnTime).toFixed(2)}s, Current count: ${this.bubbles.length}, Max: ${config.bubbleCount}`);
     }
   }
   
@@ -295,7 +300,12 @@ export class Game {
     
     // Trigger haptic feedback
     if (this.settings.haptics) {
-      HapticsService.vibrate(HapticsService.patterns.pop);
+      // Using Promise-based API that continues the chain even if vibration fails
+      HapticsService.vibrate(HapticsService.patterns.pop)
+        .catch(err => {
+          // Catch any unexpected errors to prevent breaking the promise chain
+          console.warn('Haptic feedback error:', err);
+        });
     }
     
     // Update score
@@ -334,7 +344,12 @@ export class Game {
     
     // Trigger haptic feedback
     if (this.settings.haptics) {
-      HapticsService.vibrate(HapticsService.patterns.error);
+      // Using Promise-based API that continues the chain even if vibration fails
+      HapticsService.vibrate(HapticsService.patterns.error)
+        .catch(err => {
+          // Catch any unexpected errors to prevent breaking the promise chain
+          console.warn('Haptic feedback error:', err);
+        });
     }
     
     // Update stats

@@ -15,20 +15,30 @@ export function isSupported() {
 /**
  * Triggers device vibration with the given pattern
  * @param {number|number[]} pattern - Duration in ms or pattern array [vibrate, pause, vibrate, ...]
- * @returns {boolean} Whether vibration was triggered
+ * @returns {Promise<boolean>} Promise resolving to whether vibration was triggered
  */
 export function vibrate(pattern) {
+  // Return a resolved promise if vibration isn't supported
+  // This ensures the promise chain in Game.js keeps flowing
   if (!isSupported()) {
-    return false;
+    return Promise.resolve(false);
   }
   
-  try {
-    navigator.vibrate(pattern);
-    return true;
-  } catch (error) {
-    console.error('Vibration failed:', error);
-    return false;
-  }
+  return new Promise(resolve => {
+    try {
+      // On iOS, vibrate exists but silently fails
+      // We'll resolve the promise in either case so the promise chain continues
+      const result = navigator.vibrate(pattern);
+      
+      // For most browsers, result is undefined
+      // Some implementations might return a boolean
+      resolve(result !== false);
+    } catch (error) {
+      console.error('Vibration failed:', error);
+      // Resolve with false but don't break the promise chain
+      resolve(false);
+    }
+  });
 }
 
 /**
@@ -50,9 +60,20 @@ export const patterns = {
 
 /**
  * Stops any ongoing vibration
+ * @returns {Promise<boolean>} Promise resolving to whether vibration was stopped
  */
 export function stop() {
-  if (isSupported()) {
-    navigator.vibrate(0);
+  if (!isSupported()) {
+    return Promise.resolve(false);
   }
+  
+  return new Promise(resolve => {
+    try {
+      const result = navigator.vibrate(0);
+      resolve(result !== false);
+    } catch (error) {
+      console.error('Failed to stop vibration:', error);
+      resolve(false);
+    }
+  });
 }
