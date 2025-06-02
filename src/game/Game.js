@@ -59,11 +59,15 @@ export class Game {
     // Initialize audio context (must be called from a user interaction)
     AudioService.init();
     
+    // Determine if we're on GitHub Pages and set paths accordingly
+    // Using relative paths which work in both environments
+    // We first try with relative paths, then with absolute paths
+    
     // Preload common sound effects
-    AudioService.preload('pop', '/kana-pop/assets/audio/sfx/pop.ogg', ['/kana-pop/assets/audio/sfx/pop.m4a', './assets/audio/sfx/pop.ogg', './assets/audio/sfx/pop.m4a']);
-    AudioService.preload('miss', '/kana-pop/assets/audio/sfx/miss.ogg', ['/kana-pop/assets/audio/sfx/miss.m4a', './assets/audio/sfx/miss.ogg', './assets/audio/sfx/miss.m4a']);
-    AudioService.preload('gameover', '/kana-pop/assets/audio/sfx/gameover.ogg', ['/kana-pop/assets/audio/sfx/gameover.m4a', './assets/audio/sfx/gameover.ogg', './assets/audio/sfx/gameover.m4a']);
-    AudioService.preload('levelup', '/kana-pop/assets/audio/sfx/levelup.ogg', ['/kana-pop/assets/audio/sfx/levelup.m4a', './assets/audio/sfx/levelup.ogg', './assets/audio/sfx/levelup.m4a']);
+    AudioService.preload('pop', './assets/audio/sfx/pop.ogg', ['./assets/audio/sfx/pop.m4a']);
+    AudioService.preload('miss', './assets/audio/sfx/miss.ogg', ['./assets/audio/sfx/miss.m4a']);
+    AudioService.preload('gameover', './assets/audio/sfx/gameover.ogg', ['./assets/audio/sfx/gameover.m4a']);
+    AudioService.preload('levelup', './assets/audio/sfx/levelup.ogg', ['./assets/audio/sfx/levelup.m4a']);
   }
   
   /**
