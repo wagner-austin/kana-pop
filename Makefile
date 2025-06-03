@@ -62,6 +62,11 @@ clean:
 	if exist dist rmdir /s /q dist
 	if exist node_modules rmdir /s /q node_modules
 
+# Preview the production build
+preview:
+	@echo "Starting production preview server..."
+	$(NPX) vite preview || $(NODE_BIN)/vite preview || echo "Error: Vite not found. Run 'make install' first."
+
 # Build and prepare for deployment
 deploy: build
 	@echo "Built for deployment"

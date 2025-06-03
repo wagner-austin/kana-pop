@@ -2,14 +2,14 @@
   "name": "Kana Pop!",
   "short_name": "Kana Pop",
   "description": "A fun pastel-cozy Japanese kana learning game",
-  "start_url": "./index.html",
+  "start_url": "/kana-pop/",
   "display": "standalone",
   "background_color": "#FFEAFC",
   "theme_color": "#FFC7F9",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "icons/icon-144x144.png",
+      "src": "assets/icons/icon-144x144.png",
       "sizes": "144x144",
       "type": "image/png",
       "purpose": "any maskable"
