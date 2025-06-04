@@ -22,17 +22,17 @@ export default class Bubble {
     if (this.y < -0.05) this.active = false;   // slight overshoot so it’s fully gone
   }
 
-  contains(clickPixelX: number, clickPixelY: number, canvasWidth: number, canvasHeight: number): boolean {
+  contains(clickPixelX: number, clickPixelY: number, cssW: number, cssH: number): boolean {
     if (!this.active) return false;
 
-    const bubblePixelX = this.x * canvasWidth;
-    const bubblePixelY = this.y * canvasHeight;
+    const bubblePixelX = this.x * cssW;
+    const bubblePixelY = this.y * cssH;
 
     const dx = clickPixelX - bubblePixelX;
     const dy = clickPixelY - bubblePixelY;
     const distanceSquared = dx * dx + dy * dy;
 
-    const radiusInCanvasPixels = BUBBLE_RADIUS * window.devicePixelRatio;
-    return distanceSquared <= radiusInCanvasPixels * radiusInCanvasPixels;
+    const radiusInCssPixels = BUBBLE_RADIUS;
+    return distanceSquared <= radiusInCssPixels * radiusInCssPixels;
   }
 }

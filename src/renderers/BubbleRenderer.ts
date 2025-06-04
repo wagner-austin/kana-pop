@@ -4,14 +4,16 @@
 // This class can be expanded in the future.
 import { BUBBLE_RADIUS, BUBBLE_ALPHA } from '../constants';
 import type Bubble from '../entities/Bubble';
+import { cssSize } from '../utils/canvasMetrics';
 
 export default class BubbleRenderer {
   render(ctx: CanvasRenderingContext2D, b: Bubble): void {
     ctx.save();
     ctx.beginPath();
-    ctx.arc(b.x * ctx.canvas.width,
-            b.y * ctx.canvas.height,
-            BUBBLE_RADIUS * window.devicePixelRatio, 0, Math.PI * 2);
+    const { w, h } = cssSize(ctx.canvas);
+    ctx.arc(b.x * w,
+            b.y * h,
+            BUBBLE_RADIUS, 0, Math.PI * 2);
     ctx.fillStyle   = b.color;
     ctx.globalAlpha = BUBBLE_ALPHA;
     ctx.fill();

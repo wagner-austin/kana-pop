@@ -1,4 +1,4 @@
-export const BUBBLE_RADIUS     = 50;
+export const BUBBLE_RADIUS     = 50; // in CSS pixels
 export const SPAWN_INTERVAL    = 1.2;       // seconds
 export const BUBBLE_ALPHA      = 0.5;
 

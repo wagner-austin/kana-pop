@@ -15,6 +15,7 @@ class ResizeService {
   private mediaQuery: MediaQueryList | null = null;
   private boundTrigger = this.trigger.bind(this);
   private dprCallback: (() => void) | null = null;
+  private metrics = { w: 0, h: 0, dpr: 1 };
 
   /** Subscribe and immediately invoke the callback once. */
   subscribe(cb: ResizeCallback): void {
@@ -30,7 +31,10 @@ class ResizeService {
 
   /** Keeps a canvas pixel-perfect on every resize/dpi change. */
   watchCanvas(canvas: HTMLCanvasElement): void {
-    const callback = () => resizeCanvas(canvas);
+    const callback = () => {
+      const m = resizeCanvas(canvas);
+      this.metrics = m;
+    };
     this.watchedCanvases.set(canvas, callback);
     this.subscribe(callback);
   }
@@ -88,6 +92,10 @@ class ResizeService {
     // for whatever DPR we just switched to.
     this.mediaQuery.addEventListener('change', this.dprCallback, { once: true });
   }
+
+  get cssWidth()  { return this.metrics.w; }
+  get cssHeight() { return this.metrics.h; }
+  get dpr()       { return this.metrics.dpr; }
 }
 
 export default new ResizeService();

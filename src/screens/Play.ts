@@ -3,6 +3,7 @@ import { COLOURS, SPAWN_INTERVAL } from '../constants';
 import BackgroundRenderer from '../renderers/BackgroundRenderer';
 import BubbleRenderer from '../renderers/BubbleRenderer';
 import Logger from '../utils/Logger';
+import { cssSize } from '../utils/canvasMetrics';
 
 const log = new Logger('Play');
 let fpsTimer = 0;
@@ -22,13 +23,14 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
 
   const handlePointerDown = (event: PointerEvent) => {
     const rect = ctx.canvas.getBoundingClientRect();
-    const clickPixelX = (event.clientX - rect.left) * window.devicePixelRatio;
-    const clickPixelY = (event.clientY - rect.top) * window.devicePixelRatio;
+    const clickPixelX = event.clientX - rect.left;
+    const clickPixelY = event.clientY - rect.top;
 
     // Iterate in reverse so top-most bubbles are checked first
     for (let i = bubbles.length - 1; i >= 0; i--) {
       const bubble = bubbles[i];
-      if (bubble && bubble.contains(clickPixelX, clickPixelY, ctx.canvas.width, ctx.canvas.height)) {
+      const { w, h } = cssSize(ctx.canvas);
+      if (bubble && bubble.contains(clickPixelX, clickPixelY, w, h)) {
         bubble.pop();
         // Optional: break here if only one bubble can be popped per click
         break; 

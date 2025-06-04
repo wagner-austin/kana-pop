@@ -10,4 +10,5 @@ export default function resizeCanvas(canvas: HTMLCanvasElement) {
   canvas.width  = Math.floor(w * dpr);
   canvas.height = Math.floor(h * dpr);
   ctx.scale(dpr, dpr);
+  return { w, h, dpr };
 }
