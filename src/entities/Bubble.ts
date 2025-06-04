@@ -1,5 +1,6 @@
 import Logger from '../utils/Logger';
 import { bubbleRadius } from '../constants';
+import type { SymbolDef } from '../services/LanguageService';
 const log = new Logger('Bubble');
 
 export default class Bubble {
@@ -10,8 +11,9 @@ export default class Bubble {
     public x: number,
     public y: number,
     public color: string,
+    public sym: SymbolDef, // ★ new
   ) {
-    log.debug('spawn', { x: this.x.toFixed(2), color });
+    log.debug('spawn', { x: this.x.toFixed(2), color, char: sym.char }); // Updated log
   }
   // kept intentionally dumb – no Canvas API here
 
