@@ -43,10 +43,6 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
       const rawDt = dt;             // keep the real frame time for diagnostics
       dt = Math.min(rawDt, 0.1);    // physics clamp
 
-      // ----- clear previous frame (CSS-pixel coords) -----------------
-      const { w, h } = cssSize(ctx.canvas);
-      ctx.clearRect(0, 0, w, h);
-
       // === FPS log ============================
       fpsTimer += rawDt;            // use the true elapsed time
       frames++;
