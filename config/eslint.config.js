@@ -12,7 +12,8 @@ const browserGlobals = {
   performance: 'readonly',
   requestAnimationFrame: 'readonly',
   localStorage: 'readonly',
-  console: 'readonly'
+  console: 'readonly',
+  matchMedia: 'readonly'
 };
 
 // @ts-expect-error - TypeScript may incorrectly infer the type of js.configs.recommended,

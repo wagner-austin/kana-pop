@@ -1,5 +1,6 @@
-import StateMachine from '../core/StateMachine.js';
-import { BACKGROUND_COLOUR } from '../constants.js';
+import StateMachine from '../core/StateMachine';
+import { BACKGROUND_COLOUR } from '../constants';
+import ResizeService from '../services/ResizeService';
 
 export default function makeMenu(sm: StateMachine,
                                  ctx: CanvasRenderingContext2D) {
@@ -18,14 +19,13 @@ export default function makeMenu(sm: StateMachine,
 
   return {
     enter() {
-      paint();
+      ResizeService.subscribe(paint);
       ctx.canvas.addEventListener('pointerdown', click);
-      window.addEventListener('resize', paint);   // keep centred
     },
     update() {},
     exit() {
+      ResizeService.unsubscribe(paint);
       ctx.canvas.removeEventListener('pointerdown', click);
-      window.removeEventListener('resize', paint);
     }
   };
 }

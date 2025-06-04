@@ -1,12 +1,11 @@
-import resizeCanvas from './utils/resizeCanvas.js';
-import StateMachine from './core/StateMachine.js';
-import makeMenu from './screens/Menu.js';
-import makePlay from './screens/Play.js';
+import ResizeService from './services/ResizeService';
+import StateMachine from './core/StateMachine';
+import makeMenu from './screens/Menu';
+import makePlay from './screens/Play';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#game')!;
 const ctx = canvas.getContext('2d')!;
-resizeCanvas(canvas);
-window.addEventListener('resize', () => resizeCanvas(canvas));
+ResizeService.watchCanvas(canvas);
 
 const sm = new StateMachine();
 sm.add('menu', makeMenu(sm, ctx))

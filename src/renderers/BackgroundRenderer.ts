@@ -1,5 +1,5 @@
 // src/renderers/BackgroundRenderer.ts
-import { BACKGROUND_COLOUR } from '../constants.js';
+import { BACKGROUND_COLOUR } from '../constants';
 export default class BackgroundRenderer {
   constructor() {
     // Initialization for background, e.g., load images, set up gradients
