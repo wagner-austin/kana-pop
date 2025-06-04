@@ -1,4 +1,4 @@
-.PHONY: help install run serve dev preview lint clean
+.PHONY: help install run serve dev preview lint clean test test-watch test-coverage
 
 # Default target: list available commands
 help:
@@ -19,6 +19,9 @@ help:
 	@echo "  clean                 Remove common build artifacts (e.g., 'dist', 'docs' folders,"
 	@echo "                        .parcel-cache, .tsbuildinfo)."
 	@echo "                        Uses 'npx rimraf' for cross-platform compatibility."
+	@echo "  test                  Run all tests once using Vitest."
+	@echo "  test-watch            Run tests in watch mode."
+	@echo "  test-coverage         Generate a test coverage report."
 	@echo "---------------------------------------------------------------------"
 
 # Install dependencies
@@ -62,6 +65,21 @@ clean:
 	@echo "🧹 Cleaning project artifacts..."
 	npx rimraf docs dist .parcel-cache .tsbuildinfo
 	@echo "✅ Cleaned 'docs', 'dist', '.parcel-cache', '.tsbuildinfo' (if they existed)."
+
+# Testing
+test:
+	@echo "🧪 Running tests..."
+	pnpm test
+	@echo "✅ Tests complete."
+
+test-watch:
+	@echo "👀 Running tests in watch mode..."
+	pnpm test:watch
+
+test-coverage:
+	@echo "📊 Generating test coverage report..."
+	pnpm test:coverage
+	@echo "✅ Coverage report generated in ./coverage/. Open ./coverage/index.html to view."
 
 # Set default goal to 'help' so running 'make' without arguments shows the help message.
 .DEFAULT_GOAL := help

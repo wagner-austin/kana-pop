@@ -26,7 +26,19 @@ const mergedGlobals = {
   ...browserGlobals,
 };
 
+import eslintPluginVitest from 'eslint-plugin-vitest';
+
 export default [
+  {
+    files: ['**/*.test.ts'],
+    plugins: { vitest: eslintPluginVitest },
+    rules: eslintPluginVitest.configs.recommended.rules,
+    languageOptions: {
+      globals: {
+        ...eslintPluginVitest.environments.env.globals,
+      }
+    }
+  },
   {
     ...js.configs.recommended,
 
