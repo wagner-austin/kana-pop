@@ -2,12 +2,12 @@ name: gh-pages
 
 on:
   push:
-    branches: [ main, reboot ]
-  workflow_dispatch:               # lets you trigger a manual rebuild
+    branches: [main, reboot]
+  workflow_dispatch: # lets you trigger a manual rebuild
 
 permissions:
-  contents: write    # allow git push
-  id-token: write    # future-proof (OIDC / Pages)
+  contents: write # allow git push
+  id-token: write # future-proof (OIDC / Pages)
 
 jobs:
   deploy:
@@ -36,4 +36,4 @@ jobs:
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: docs          # vite writes here (outDir in vite.config.ts)
+          publish_dir: docs # vite writes here (outDir in vite.config.ts)

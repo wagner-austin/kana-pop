@@ -1,5 +1,5 @@
-export const SPAWN_INTERVAL    = 1.2;       // seconds
-export const BUBBLE_ALPHA      = 0.5;
+export const SPAWN_INTERVAL = 1.2; // seconds
+export const BUBBLE_ALPHA = 0.5;
 
 import ResizeService from './services/ResizeService'; // Adjusted path assuming constants.ts is in src/
 
@@ -15,4 +15,3 @@ export function bubbleRadius(): number {
   const cssHeight = ResizeService.cssHeight || window.innerHeight; // Fallback if ResizeService not ready
   return Math.min(cssWidth, cssHeight) * 0.06;
 }
-

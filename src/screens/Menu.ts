@@ -3,8 +3,7 @@ import { BACKGROUND_COLOUR, TEXT_COLOUR_DARK } from '../constants';
 import ResizeService from '../services/ResizeService';
 import { applyDprTransform, cssSize } from '../utils/canvasMetrics';
 
-export default function makeMenu(sm: StateMachine,
-                                 ctx: CanvasRenderingContext2D) {
+export default function makeMenu(sm: StateMachine, ctx: CanvasRenderingContext2D) {
   const click = () => sm.change('play');
 
   function paint() {
@@ -13,7 +12,7 @@ export default function makeMenu(sm: StateMachine,
     ctx.fillStyle = BACKGROUND_COLOUR;
     ctx.fillRect(0, 0, width, height);
 
-    ctx.fillStyle = TEXT_COLOUR_DARK;                 // dark text
+    ctx.fillStyle = TEXT_COLOUR_DARK; // dark text
     ctx.textAlign = 'center';
     ctx.font = '32px sans-serif';
     ctx.fillText('Tap to Start', width / 2, height / 2);
@@ -30,6 +29,6 @@ export default function makeMenu(sm: StateMachine,
     exit() {
       ResizeService.unsubscribe(paint);
       ctx.canvas.removeEventListener('pointerdown', click);
-    }
+    },
   };
 }

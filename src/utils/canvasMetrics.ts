@@ -4,7 +4,7 @@ export function cssSize(canvas: HTMLCanvasElement) {
 }
 
 export function dpr(canvas: HTMLCanvasElement) {
-  return canvas.width / canvas.clientWidth;          // always integer ≥ 1
+  return canvas.width / canvas.clientWidth; // always integer ≥ 1
 }
 
 export function applyDprTransform(ctx: CanvasRenderingContext2D) {

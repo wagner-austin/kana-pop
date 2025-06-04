@@ -6,7 +6,11 @@ export default class Bubble {
   active: boolean = true;
   public speed: number = 0.2; // fraction of canvas height per second
 
-  constructor(public x: number, public y: number, public color: string) {
+  constructor(
+    public x: number,
+    public y: number,
+    public color: string,
+  ) {
     log.debug('spawn', { x: this.x.toFixed(2), color });
   }
   // kept intentionally dumb – no Canvas API here
@@ -19,7 +23,7 @@ export default class Bubble {
 
   step(dt: number) {
     this.y -= this.speed * dt;
-    if (this.y < -0.05) this.active = false;   // slight overshoot so it’s fully gone
+    if (this.y < -0.05) this.active = false; // slight overshoot so it’s fully gone
   }
 
   contains(clickPixelX: number, clickPixelY: number, cssW: number, cssH: number): boolean {

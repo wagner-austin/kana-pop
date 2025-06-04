@@ -11,10 +11,8 @@ export default class BubbleRenderer {
     ctx.save();
     ctx.beginPath();
     const { w, h } = cssSize(ctx.canvas);
-    ctx.arc(b.x * w,
-            b.y * h,
-            bubbleRadius(), 0, Math.PI * 2); // Fetch radius at render time
-    ctx.fillStyle   = b.color;
+    ctx.arc(b.x * w, b.y * h, bubbleRadius(), 0, Math.PI * 2); // Fetch radius at render time
+    ctx.fillStyle = b.color;
     ctx.globalAlpha = BUBBLE_ALPHA;
     ctx.fill();
     ctx.restore();

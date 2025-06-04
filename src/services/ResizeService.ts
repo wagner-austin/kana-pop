@@ -20,7 +20,7 @@ class ResizeService {
   /** Subscribe and immediately invoke the callback once. */
   subscribe(cb: ResizeCallback): void {
     this.listeners.add(cb);
-    cb();                                   // run once synchronously
+    cb(); // run once synchronously
     if (this.listeners.size === 1) this.attachWindowListeners();
   }
 
@@ -50,7 +50,7 @@ class ResizeService {
 
   // ────────────────────────────────────────────────────────────
   private trigger(): void {
-    this.listeners.forEach(cb => cb());
+    this.listeners.forEach((cb) => cb());
   }
 
   private attachWindowListeners(): void {
@@ -67,7 +67,6 @@ class ResizeService {
     this.dprCallback = null;
   }
 
-
   /**
    * Re-creates a matchMedia listener tied to the *current*
    * device-pixel-ratio.  Called on initial attach *and* every time
@@ -80,12 +79,11 @@ class ResizeService {
     }
 
     // Set up a fresh one for the current DPR.
-    this.mediaQuery =
-      matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+    this.mediaQuery = matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
 
     this.dprCallback = () => {
       this.boundTrigger();
-      this.addDprListener();   // re-attach for the new DPR
+      this.addDprListener(); // re-attach for the new DPR
     };
 
     // When it fires we ① notify subscribers and ② arm a new listener
@@ -93,9 +91,15 @@ class ResizeService {
     this.mediaQuery.addEventListener('change', this.dprCallback, { once: true });
   }
 
-  get cssWidth()  { return this.metrics.w; }
-  get cssHeight() { return this.metrics.h; }
-  get dpr()       { return this.metrics.dpr; }
+  get cssWidth() {
+    return this.metrics.w;
+  }
+  get cssHeight() {
+    return this.metrics.h;
+  }
+  get dpr() {
+    return this.metrics.dpr;
+  }
 }
 
 export default new ResizeService();

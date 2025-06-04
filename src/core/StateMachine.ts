@@ -12,7 +12,10 @@ export default class StateMachine {
   private current?: State;
   private currentName?: string;
 
-  add(name: string, s: State) { this.states.set(name, s); return this; }
+  add(name: string, s: State) {
+    this.states.set(name, s);
+    return this;
+  }
 
   change(name: string) {
     log.info('→ change', { from: this.currentName, to: name });
@@ -21,7 +24,9 @@ export default class StateMachine {
     this.currentName = name;
     this.current?.enter?.();
   }
-  update(dt: number) { this.current?.update?.(dt); }
+  update(dt: number) {
+    this.current?.update?.(dt);
+  }
 
   get currentStateName(): string | undefined {
     return this.currentName;

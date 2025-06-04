@@ -12,7 +12,7 @@ export default class BackgroundRenderer {
   }
 
   draw(ctx: CanvasRenderingContext2D): void {
-    const { w, h } = cssSize(ctx.canvas);   // css-pixel values
+    const { w, h } = cssSize(ctx.canvas); // css-pixel values
     ctx.fillStyle = BACKGROUND_COLOUR;
     ctx.fillRect(0, 0, w, h);
   }
