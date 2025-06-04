@@ -27,9 +27,9 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
     const clickPixelY = event.clientY - rect.top;
 
     // Iterate in reverse so top-most bubbles are checked first
+    const { w, h } = cssSize(ctx.canvas);         // << once
     for (let i = bubbles.length - 1; i >= 0; i--) {
       const bubble = bubbles[i];
-      const { w, h } = cssSize(ctx.canvas);
       if (bubble && bubble.contains(clickPixelX, clickPixelY, w, h)) {
         bubble.pop();
         // Optional: break here if only one bubble can be popped per click
@@ -42,6 +42,11 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
     update(dt: number) {
       const rawDt = dt;             // keep the real frame time for diagnostics
       dt = Math.min(rawDt, 0.1);    // physics clamp
+
+      // ----- clear previous frame (CSS-pixel coords) -----------------
+      const { w, h } = cssSize(ctx.canvas);
+      ctx.clearRect(0, 0, w, h);
+
       // === FPS log ============================
       fpsTimer += rawDt;            // use the true elapsed time
       frames++;
