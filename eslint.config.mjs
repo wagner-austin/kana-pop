@@ -36,8 +36,8 @@ export default [
     languageOptions: {
       globals: {
         ...eslintPluginVitest.environments.env.globals,
-      }
-    }
+      },
+    },
   },
   {
     ...js.configs.recommended,
@@ -60,6 +60,7 @@ export default [
       ...tseslint.configs.recommended.rules,
       'no-console': ['error', { allow: ['warn', 'error'] }],
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      'no-undef': 'off', // core rule mis-fires on TS built-ins like Record
     },
   },
   {
