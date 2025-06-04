@@ -32,7 +32,7 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
 
       spawn -= dt;
       if (spawn <= 0) {
-        const b = new Bubble(Math.random(), randColor());
+        const b = new Bubble(Math.random(), 1.0, randColor()); // y=1.0 is bottom of screen
         bubbles.push(b);
         log.debug('spawned bubble', bubbles.length);
         spawn = SPAWN_INTERVAL;
@@ -45,6 +45,10 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
       }
 
       backgroundRenderer.update(dt);
+
+      // Update bubble positions
+      bubbles.forEach(b => b.step(dt));
+
       backgroundRenderer.draw(ctx);
 
       bubbles.forEach(b => bubbleRenderer.render(ctx, b));

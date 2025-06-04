@@ -2,7 +2,7 @@
 // This class is intended to handle the rendering of individual bubbles.
 // For now, Bubble entities manage their own drawing via their .draw() method as per Play.ts pseudo-code.
 // This class can be expanded in the future.
-import { BUBBLE_RADIUS, GROUND_OFFSET, BUBBLE_ALPHA } from '../constants';
+import { BUBBLE_RADIUS, BUBBLE_ALPHA } from '../constants';
 import type Bubble from '../entities/Bubble';
 
 export default class BubbleRenderer {
@@ -10,7 +10,7 @@ export default class BubbleRenderer {
     ctx.save();
     ctx.beginPath();
     ctx.arc(b.x * ctx.canvas.width,
-            ctx.canvas.height - GROUND_OFFSET,
+            b.y * ctx.canvas.height,
             BUBBLE_RADIUS, 0, Math.PI * 2);
     ctx.fillStyle   = b.color;
     ctx.globalAlpha = BUBBLE_ALPHA;

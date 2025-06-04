@@ -4,10 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "vite --config config/vite.config.ts --open",
-    "build": "vite build --config config/vite.config.ts",
-    "preview": "vite preview --config config/vite.config.ts --open",
-    "lint": "eslint --config config/eslint.config.js --ext .ts,.js src config",
+    "dev": "vite --config vite.config.ts --open",
+    "build": "vite build --config vite.config.ts",
+    "preview": "vite preview --config vite.config.ts --open",
+    "lint": "eslint --config config/eslint.config.mjs --ext .ts,.js src config",
     "type-check": "tsc --noEmit"
   },
   "keywords": [],

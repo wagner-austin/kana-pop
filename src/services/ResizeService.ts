@@ -4,6 +4,9 @@
  */
 import resizeCanvas from './ResizeCanvas';
 
+// Re-export for testing or specific advanced usage if needed.
+export { resizeCanvas };
+
 export type ResizeCallback = () => void;
 
 class ResizeService {
