@@ -45,7 +45,9 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
       frames++;
       if (fpsTimer >= 1) {
         const fps = Math.round(frames / fpsTimer);
-        log.debug('fps', fps);
+        if (localStorage.getItem('logLevel') === 'debug') {
+          log.debug('fps', fps);
+        }
         fpsTimer = 0;
         frames = 0;
       }
