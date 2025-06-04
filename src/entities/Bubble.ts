@@ -32,6 +32,7 @@ export default class Bubble {
     const dy = clickPixelY - bubblePixelY;
     const distanceSquared = dx * dx + dy * dy;
 
-    return distanceSquared <= BUBBLE_RADIUS * BUBBLE_RADIUS;
+    const radiusInCanvasPixels = BUBBLE_RADIUS * window.devicePixelRatio;
+    return distanceSquared <= radiusInCanvasPixels * radiusInCanvasPixels;
   }
 }

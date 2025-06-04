@@ -11,7 +11,7 @@ export default class BubbleRenderer {
     ctx.beginPath();
     ctx.arc(b.x * ctx.canvas.width,
             b.y * ctx.canvas.height,
-            BUBBLE_RADIUS, 0, Math.PI * 2);
+            BUBBLE_RADIUS * window.devicePixelRatio, 0, Math.PI * 2);
     ctx.fillStyle   = b.color;
     ctx.globalAlpha = BUBBLE_ALPHA;
     ctx.fill();
