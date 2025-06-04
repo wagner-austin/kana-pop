@@ -1,13 +1,15 @@
 import StateMachine from '../core/StateMachine';
 import { BACKGROUND_COLOUR, TEXT_COLOUR_DARK } from '../constants';
 import ResizeService from '../services/ResizeService';
+import { applyDprTransform, cssSize } from '../utils/canvasMetrics';
 
 export default function makeMenu(sm: StateMachine,
                                  ctx: CanvasRenderingContext2D) {
   const click = () => sm.change('play');
 
   function paint() {
-    const { width, height } = ctx.canvas;
+    applyDprTransform(ctx); // Ensure transform is active for every paint
+    const { w: width, h: height } = cssSize(ctx.canvas);
     ctx.fillStyle = BACKGROUND_COLOUR;
     ctx.fillRect(0, 0, width, height);
 
@@ -22,7 +24,9 @@ export default function makeMenu(sm: StateMachine,
       ResizeService.subscribe(paint);
       ctx.canvas.addEventListener('pointerdown', click);
     },
-    update() {},
+    update() {
+      paint();
+    },
     exit() {
       ResizeService.unsubscribe(paint);
       ctx.canvas.removeEventListener('pointerdown', click);

@@ -1,5 +1,5 @@
 import Logger from '../utils/Logger';
-import { BUBBLE_RADIUS } from '../constants';
+import { bubbleRadius } from '../constants';
 const log = new Logger('Bubble');
 
 export default class Bubble {
@@ -32,7 +32,7 @@ export default class Bubble {
     const dy = clickPixelY - bubblePixelY;
     const distanceSquared = dx * dx + dy * dy;
 
-    const radiusInCssPixels = BUBBLE_RADIUS;
-    return distanceSquared <= radiusInCssPixels * radiusInCssPixels;
+    const r = bubbleRadius(); // Fetch radius at time of check
+    return distanceSquared <= r * r;
   }
 }

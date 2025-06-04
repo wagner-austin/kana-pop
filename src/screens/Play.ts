@@ -3,7 +3,8 @@ import { COLOURS, SPAWN_INTERVAL } from '../constants';
 import BackgroundRenderer from '../renderers/BackgroundRenderer';
 import BubbleRenderer from '../renderers/BubbleRenderer';
 import Logger from '../utils/Logger';
-import { cssSize } from '../utils/canvasMetrics';
+import { cssSize, applyDprTransform } from '../utils/canvasMetrics';
+import ResizeService from '../services/ResizeService';
 
 const log = new Logger('Play');
 let fpsTimer = 0;
@@ -17,9 +18,47 @@ const randColor = (): string => {
 
 export default function makePlay(ctx: CanvasRenderingContext2D) {
   let bubbles: Bubble[] = [];
+  let prevCssW = ctx.canvas.clientWidth;
+  let prevCssH = ctx.canvas.clientHeight;
   let spawn = 0;
   const bubbleRenderer = new BubbleRenderer();
   const backgroundRenderer = new BackgroundRenderer();
+
+  const handleResize = () => {
+    const { w: newW, h: newH } = cssSize(ctx.canvas);
+
+    if (prevCssW === 0 || prevCssH === 0) { // Avoid division by zero on initial load if dimensions are 0
+      prevCssW = newW;
+      prevCssH = newH;
+      return;
+    }
+
+    const sx = newW / prevCssW;
+    const sy = newH / prevCssH;
+
+    if (!Number.isFinite(sx) || sx === 0 ||
+        !Number.isFinite(sy) || sy === 0) {
+      // Update prevW/prevH even if scaling factors are invalid to prevent issues on subsequent resizes
+      prevCssW = newW;
+      prevCssH = newH;
+      return;
+    }
+
+    bubbles.forEach(bubble => {
+      // Multiply by inverse factors to keep pixel positions stable relative to new viewport
+      // This assumes bubble.x and bubble.y are normalized (0-1) coordinates
+      // If they are pixel coordinates, the logic would be bubble.x *= sx; bubble.y *= sy;
+      // Based on `new Bubble(Math.random(), 1.0, randColor())`, they seem to be normalized.
+      // However, the prompt asks for `bubble.x * (1/sx)` which implies they are NOT normalized
+      // or that the scaling logic is intended to counteract a different effect.
+      // Sticking to the prompt's direct instruction for inverse scaling:
+      if (sx !== 0) bubble.x /= sx; 
+      if (sy !== 0) bubble.y /= sy;
+    });
+
+    prevCssW = newW;
+    prevCssH = newH;
+  };
 
   const handlePointerDown = (event: PointerEvent) => {
     const rect = ctx.canvas.getBoundingClientRect();
@@ -40,6 +79,7 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
 
   return {
     update(dt: number) {
+      applyDprTransform(ctx);
       const rawDt = dt;             // keep the real frame time for diagnostics
       dt = Math.min(rawDt, 0.1);    // physics clamp
 
@@ -80,10 +120,14 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
     },
     enter() {
       log.info('Play screen entered');
+      ResizeService.subscribe(handleResize);
+      // Call handleResize once initially to set correct scaling if canvas size differs from prevW/prevH defaults
+      handleResize(); 
       ctx.canvas.addEventListener('pointerdown', handlePointerDown);
     },
     exit() {
       log.info('Play screen exited');
+      ResizeService.unsubscribe(handleResize);
       ctx.canvas.removeEventListener('pointerdown', handlePointerDown);
       // Clear bubbles or other screen-specific state if necessary
       bubbles = []; 
