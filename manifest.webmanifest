@@ -1,0 +1,7 @@
+{
+  "name": "Kana Pop",
+  "short_name": "KanaPop",
+  "start_url": ".",
+  "display": "standalone",
+  "icons": []
+}
