@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  happy-dom: '*'
+
 importers:
 
   .:
@@ -42,7 +45,7 @@ importers:
         specifier: ^0.5.4
         version: 0.5.4(@typescript-eslint/eslint-plugin@8.33.1(@typescript-eslint/parser@8.33.1(eslint@9.28.0)(typescript@5.8.3))(eslint@9.28.0)(typescript@5.8.3))(eslint@9.28.0)(typescript@5.8.3)(vitest@3.2.1(@types/node@22.15.29)(happy-dom@17.6.3)(jsdom@26.1.0))
       jest-canvas-mock:
-        specifier: ^2.5.2
+        specifier: 2.5.2
         version: 2.5.2
       jsdom:
         specifier: ^26.1.0

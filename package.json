@@ -32,12 +32,17 @@
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-prettier": "^5.4.1",
     "eslint-plugin-vitest": "^0.5.4",
-    "jest-canvas-mock": "^2.5.2",
+    "jest-canvas-mock": "2.5.2",
     "jsdom": "^26.1.0",
     "prettier": "^3.5.3",
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.2.1"
+  },
+  "pnpm": {
+    "overrides": {
+      "happy-dom": "*"
+    }
   }
 }
