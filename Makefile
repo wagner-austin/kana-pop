@@ -15,7 +15,7 @@ help:
 	@echo "  preview               Preview the application as it might appear on"
 	@echo "                        GitHub Pages, serving from http://localhost:8081."
 	@echo "                        Ensures relative paths are working."
-	@echo "  lint                  Lint the TypeScript and JavaScript codebase."
+	@echo "  lint                  Perform type checking, format code, and fix lint issues."
 	@echo "  clean                 Remove common build artifacts (e.g., 'dist', 'docs' folders,"
 	@echo "                        .parcel-cache, .tsbuildinfo)."
 	@echo "                        Uses 'npx rimraf' for cross-platform compatibility."
@@ -43,15 +43,18 @@ preview:
 	pnpm preview --port 8081
 	@echo "✅ Preview available (usually http://localhost:8081). Press Ctrl+C to stop."
 
-# Linting & Type Checking
+# Linting, Formatting & Type Checking
 lint:
 	@echo "🧐 Performing type checking..."
 	pnpm type-check
 	@echo "✅ Type checking complete."
-	@echo "🔍 Linting codebase..."
-	pnpm run lint
-	@echo "✅ Linting complete."
-	@echo "👍 All checks (types & lint) passed."
+	@echo "💅 Formatting codebase..."
+	pnpm format
+	@echo "✅ Formatting complete."
+	@echo "🔍 Linting and fixing codebase..."
+	pnpm lint --fix
+	@echo "✅ Linting and fixing complete."
+	@echo "👍 All checks (types, formatting & lint) passed."
 
 # Cleaning
 # Removes common build/cache folders.

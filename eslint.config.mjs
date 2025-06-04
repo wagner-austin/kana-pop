@@ -3,7 +3,7 @@
 import js from '@eslint/js';
 import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';
-import prettier from 'eslint-config-prettier';
+import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import path from 'node:path';
 
 const browserGlobals = {
@@ -13,7 +13,7 @@ const browserGlobals = {
   requestAnimationFrame: 'readonly',
   localStorage: 'readonly',
   console: 'readonly',
-  matchMedia: 'readonly'
+  matchMedia: 'readonly',
 };
 
 // @ts-expect-error - TypeScript may incorrectly infer the type of js.configs.recommended,
@@ -21,39 +21,40 @@ const browserGlobals = {
 // assuming the runtime object structure is correct as per ESLint standards.
 const recommendedLangOptions = js.configs.recommended.languageOptions;
 
-const mergedGlobals = { 
-  ...(recommendedLangOptions?.globals ?? {}), 
-  ...browserGlobals 
+const mergedGlobals = {
+  ...(recommendedLangOptions?.globals ?? {}),
+  ...browserGlobals,
 };
 
 export default [
   {
     ...js.configs.recommended,
+
     languageOptions: {
       ...recommendedLangOptions,
-      globals: mergedGlobals
+      globals: mergedGlobals,
     },
-    ignores: ['**/*.json', 'index.html']
+    ignores: ['**/*.json', 'index.html'],
   },
   {
     files: ['**/*.ts'],
     languageOptions: {
       parser: tsparser,
       parserOptions: { project: path.resolve('./tsconfig.json'), sourceType: 'module' },
-      globals: mergedGlobals
+      globals: mergedGlobals,
     },
     plugins: { '@typescript-eslint': tseslint },
     rules: {
       ...tseslint.configs.recommended.rules,
       'no-console': ['error', { allow: ['warn', 'error'] }],
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }]
-    }
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    },
   },
   {
     files: ['src/utils/Logger.ts'],
     rules: {
-      'no-console': 'off'
-    }
+      'no-console': 'off',
+    },
   },
-  prettier
+  eslintPluginPrettierRecommended,
 ];
