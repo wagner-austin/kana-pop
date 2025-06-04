@@ -14,6 +14,6 @@ import '@testing-library/jest-dom/vitest';
 Object.defineProperty(window, 'devicePixelRatio', { value: 2, writable: true });
 
 window.matchMedia = (q: string) =>
-  ({ media: q, matches: false, addEventListener() {}, removeEventListener() {} } as any);
+  ({ media: q, matches: false, addEventListener() {}, removeEventListener() {} }) as any;
 
 if (!('PointerEvent' in globalThis)) (globalThis as any).PointerEvent = MouseEvent;

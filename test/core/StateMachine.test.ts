@@ -2,9 +2,9 @@ import { describe, it, expect, vi } from 'vitest';
 import StateMachine, { State } from '@/core/StateMachine';
 
 describe('StateMachine', () => {
-  const enter   = vi.fn();
-  const update  = vi.fn();
-  const exit    = vi.fn();
+  const enter = vi.fn();
+  const update = vi.fn();
+  const exit = vi.fn();
 
   const a: State = { enter, update, exit };
   const b: State = { enter: vi.fn(), update: vi.fn(), exit: vi.fn() };

@@ -5,8 +5,8 @@ import ResizeService from '@/services/ResizeService';
 describe('Play screen flow', () => {
   it('spawns & pops a bubble on pointerdown', () => {
     const canvas = document.createElement('canvas');
-    canvas.width = canvas.height = 100;              // jsdom canvas respects width/height
-    Object.defineProperty(canvas, 'clientWidth',  { configurable: true, value: 100 });
+    canvas.width = canvas.height = 100; // jsdom canvas respects width/height
+    Object.defineProperty(canvas, 'clientWidth', { configurable: true, value: 100 });
     Object.defineProperty(canvas, 'clientHeight', { configurable: true, value: 100 });
     document.body.appendChild(canvas);
     ResizeService.watchCanvas(canvas);
@@ -16,11 +16,11 @@ describe('Play screen flow', () => {
     play.enter();
 
     // Run game for 1.3 s so first bubble appears (SPAWN_INTERVAL 1.2 s)
-    play.update(0);               // spawn happens immediately (spawn === 0)
+    play.update(0); // spawn happens immediately (spawn === 0)
 
     // Synthetic click dead-centre where bubble should be
     canvas.dispatchEvent(
-      new PointerEvent('pointerdown', { clientX: 50, clientY: 99 }) // y≈bottom before step()
+      new PointerEvent('pointerdown', { clientX: 50, clientY: 99 }), // y≈bottom before step()
     );
 
     // Continue 1 frame to let pop() flag propagate

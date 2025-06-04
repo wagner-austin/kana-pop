@@ -20,7 +20,7 @@ describe('ResizeService', () => {
     const { w, h, dpr } = resizeCanvas(canvas);
     expect(w).toBe(200);
     expect(h).toBe(100);
-    expect(canvas.width).toBe(400);  // 2× DPR
+    expect(canvas.width).toBe(400); // 2× DPR
     expect(dpr).toBe(2);
   });
 });
