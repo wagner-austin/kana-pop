@@ -24,7 +24,8 @@ export default class Logger {
     // Filtering logic from section 3
     if (ORDER[level] < ORDER[MIN_LEVEL]) return;
 
-    const time = new Date().toISOString().split('T')[1].slice(0, 8);
+    const timeParts = new Date().toISOString().split('T');
+    const time = timeParts.length > 1 && timeParts[1] ? timeParts[1].slice(0, 8) : '00:00:00';
     console.log(
       `%c${time} %c${this.ns} %c${level.toUpperCase()}`,
       'color:#999;font-size:0.8em',

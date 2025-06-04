@@ -86,7 +86,10 @@
     /* Type Checking */
     "strict": true, /* Enable all strict type-checking options. */
     "resolveJsonModule": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noImplicitOverride": true,
     "noEmit": true,    // vite does the bundling
   },
-  "include": ["src", "config"]
+  "include": ["src", "eslint.config.mjs"]
 }

@@ -8,7 +8,11 @@ const log = new Logger('Play');
 let fpsTimer = 0;
 let frames = 0;
 
-const randColor = () => COLOURS[Math.floor(Math.random() * COLOURS.length)];
+const randColor = (): string => {
+  if (COLOURS.length === 0) return '#FFFFFF'; // Default to white if COLOURS is empty
+  const color = COLOURS[Math.floor(Math.random() * COLOURS.length)];
+  return color ?? '#FFFFFF'; // Default to white if selected color is somehow undefined
+};
 
 export default function makePlay(ctx: CanvasRenderingContext2D) {
   let bubbles: Bubble[] = [];
@@ -24,7 +28,7 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
     // Iterate in reverse so top-most bubbles are checked first
     for (let i = bubbles.length - 1; i >= 0; i--) {
       const bubble = bubbles[i];
-      if (bubble.contains(clickPixelX, clickPixelY, ctx.canvas.width, ctx.canvas.height)) {
+      if (bubble && bubble.contains(clickPixelX, clickPixelY, ctx.canvas.width, ctx.canvas.height)) {
         bubble.pop();
         // Optional: break here if only one bubble can be popped per click
         break; 
