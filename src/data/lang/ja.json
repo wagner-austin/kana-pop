@@ -1,0 +1,11 @@
+{
+  "code": "ja",
+  "name": "Japanese · Kana",
+  "symbols": [
+    { "char": "あ", "roman": "a", "audio": "a.mp3" },
+    { "char": "い", "roman": "i", "audio": "i.mp3" },
+    { "char": "う", "roman": "u", "audio": "u.mp3" },
+    { "char": "え", "roman": "e", "audio": "e.mp3" },
+    { "char": "お", "roman": "o", "audio": "o.mp3" }
+  ]
+}
