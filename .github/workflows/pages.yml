@@ -1,0 +1,35 @@
+name: gh-pages
+
+on:
+  push:
+    branches: [ reboot ]           # or “main” if you switch later
+  workflow_dispatch:               # lets you trigger a manual rebuild
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Build with the correct path for GitHub Pages
+      - name: Build site
+        run: |
+          BASE_PATH=/kana-pop/ pnpm build
+
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: docs          # vite writes here (outDir in vite.config.ts)
