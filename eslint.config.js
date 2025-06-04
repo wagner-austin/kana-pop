@@ -1,3 +1,5 @@
+// NOTE: We use flat-config so we must enumerate any browser globals
+// we reference in code; otherwise ESLint flags them as no-undef.
 import js from '@eslint/js';
 import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';
@@ -8,7 +10,9 @@ const browserGlobals = {
   window: 'readonly',
   document: 'readonly',
   performance: 'readonly',
-  requestAnimationFrame: 'readonly'
+  requestAnimationFrame: 'readonly',
+  localStorage: 'readonly',
+  console: 'readonly'
 };
 
 export default [

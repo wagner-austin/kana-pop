@@ -43,11 +43,15 @@ preview:
 	pnpm preview --port 8081
 	@echo "✅ Preview available (usually http://localhost:8081). Press Ctrl+C to stop."
 
-# Linting
+# Linting & Type Checking
 lint:
+	@echo "🧐 Performing type checking..."
+	pnpm type-check
+	@echo "✅ Type checking complete."
 	@echo "🔍 Linting codebase..."
 	pnpm run lint
 	@echo "✅ Linting complete."
+	@echo "👍 All checks (types & lint) passed."
 
 # Cleaning
 # Removes common build/cache folders.
