@@ -7,7 +7,7 @@
     "dev": "vite --config vite.config.ts --open",
     "build": "vite build --config vite.config.ts",
     "preview": "vite preview --config vite.config.ts --open",
-    "lint": "eslint --config config/eslint.config.mjs --ext .ts,.js src config",
+    "lint": "eslint --config eslint.config.mjs --ext .ts,.js,.mjs src eslint.config.mjs",
     "type-check": "tsc --noEmit"
   },
   "keywords": [],

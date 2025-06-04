@@ -1,5 +1,4 @@
 export const BUBBLE_RADIUS     = 20;
-export const GROUND_OFFSET     = 40;        // distance from canvas bottom
 export const SPAWN_INTERVAL    = 1.2;       // seconds
 export const BUBBLE_ALPHA      = 0.5;
 

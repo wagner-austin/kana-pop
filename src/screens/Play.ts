@@ -18,8 +18,8 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
 
   const handlePointerDown = (event: PointerEvent) => {
     const rect = ctx.canvas.getBoundingClientRect();
-    const clickPixelX = event.clientX - rect.left;
-    const clickPixelY = event.clientY - rect.top;
+    const clickPixelX = (event.clientX - rect.left) * window.devicePixelRatio;
+    const clickPixelY = (event.clientY - rect.top) * window.devicePixelRatio;
 
     // Iterate in reverse so top-most bubbles are checked first
     for (let i = bubbles.length - 1; i >= 0; i--) {
