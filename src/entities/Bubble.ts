@@ -19,7 +19,7 @@ export default class Bubble {
 
   step(dt: number) {
     this.y -= this.speed * dt;
-    // TODO: Add logic to deactivate bubble if it goes off-screen (e.g., y < 0)
+    if (this.y < -0.05) this.active = false;   // slight overshoot so it’s fully gone
   }
 
   contains(clickPixelX: number, clickPixelY: number, canvasWidth: number, canvasHeight: number): boolean {
