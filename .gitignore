@@ -31,3 +31,5 @@ pnpm-debug.log*
 
 # Ignore temp.txt
 temp.txt
+docs/manifest.webmanifest
+docs/
