@@ -16,6 +16,22 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
   const bubbleRenderer = new BubbleRenderer();
   const backgroundRenderer = new BackgroundRenderer();
 
+  const handlePointerDown = (event: PointerEvent) => {
+    const rect = ctx.canvas.getBoundingClientRect();
+    const clickPixelX = event.clientX - rect.left;
+    const clickPixelY = event.clientY - rect.top;
+
+    // Iterate in reverse so top-most bubbles are checked first
+    for (let i = bubbles.length - 1; i >= 0; i--) {
+      const bubble = bubbles[i];
+      if (bubble.contains(clickPixelX, clickPixelY, ctx.canvas.width, ctx.canvas.height)) {
+        bubble.pop();
+        // Optional: break here if only one bubble can be popped per click
+        break; 
+      }
+    }
+  };
+
   return {
     update(dt: number) {
       const rawDt = dt;             // keep the real frame time for diagnostics
@@ -52,6 +68,16 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
       backgroundRenderer.draw(ctx);
 
       bubbles.forEach(b => bubbleRenderer.render(ctx, b));
+    },
+    enter() {
+      log.info('Play screen entered');
+      ctx.canvas.addEventListener('pointerdown', handlePointerDown);
+    },
+    exit() {
+      log.info('Play screen exited');
+      ctx.canvas.removeEventListener('pointerdown', handlePointerDown);
+      // Clear bubbles or other screen-specific state if necessary
+      bubbles = []; 
     }
   };
 }

@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  base: '/kana-pop/',
+  base: process.env.BASE_PATH ?? '/',
   build: { outDir: 'docs' }
 });
