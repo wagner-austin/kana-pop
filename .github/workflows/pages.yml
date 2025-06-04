@@ -2,8 +2,12 @@ name: gh-pages
 
 on:
   push:
-    branches: [ reboot ]           # or “main” if you switch later
+    branches: [ main, reboot ]
   workflow_dispatch:               # lets you trigger a manual rebuild
+
+permissions:
+  contents: write    # allow git push
+  id-token: write    # future-proof (OIDC / Pages)
 
 jobs:
   deploy:
