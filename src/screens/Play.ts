@@ -5,6 +5,10 @@ import BubbleRenderer from '../renderers/BubbleRenderer';
 import Logger from '../utils/Logger';
 import { cssSize, applyDprTransform } from '../utils/canvasMetrics';
 import ResizeService from '../services/ResizeService';
+import Lang from '../services/LanguageService';
+import Sound from '../services/SoundService';
+import Popup from '../entities/Popup';
+import type { SymbolDef } from '../services/LanguageService';
 
 const log = new Logger('Play');
 let fpsTimer = 0;
@@ -23,6 +27,20 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
   let spawn = 0;
   const bubbleRenderer = new BubbleRenderer();
   const backgroundRenderer = new BackgroundRenderer();
+  let popups: Popup[] = [];
+  let ready = false;
+
+  const FALLBACK_SYMBOL: SymbolDef = { char: '?', roman: '?', audio: 'fallback.mp3' }; // Define a fallback
+
+  const randSymbol = (): SymbolDef => {
+    if (!Lang.symbols || Lang.symbols.length === 0) {
+      log.error('randSymbol called but Lang.symbols is empty. Returning fallback symbol.');
+      return FALLBACK_SYMBOL;
+    }
+    // This assumes Lang.symbols is populated and non-empty by the time it's called.
+    // Error handling for empty symbols array might be needed depending on game robustness requirements.
+    return Lang.symbols[Math.floor(Math.random() * Lang.symbols.length)]!;
+  };
 
   const handleResize = () => {
     const { w: newW, h: newH } = cssSize(ctx.canvas);
@@ -62,6 +80,8 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
       const bubble = bubbles[i];
       if (bubble && bubble.contains(clickPixelX, clickPixelY, w, h)) {
         bubble.pop();
+        Sound.play(`${Lang.currentCode}/${bubble.sym.audio}`);
+        popups.push(new Popup(clickPixelX, clickPixelY, bubble.sym.roman));
         // Optional: break here if only one bubble can be popped per click
         break;
       }
@@ -70,6 +90,7 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
 
   return {
     update(dt: number) {
+      if (!ready) return; // skip the frame until we’re loaded
       applyDprTransform(ctx);
       const rawDt = dt; // keep the real frame time for diagnostics
       dt = Math.min(rawDt, 0.1); // physics clamp
@@ -88,7 +109,8 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
 
       spawn -= dt;
       if (spawn <= 0) {
-        const b = new Bubble(Math.random(), 1.0, randColor()); // y=1.0 is bottom of screen
+        const s = randSymbol();
+        const b = new Bubble(Math.random(), 1.0, randColor(), s); // y=1.0 is bottom of screen
         bubbles.push(b);
         log.debug('spawned bubble', bubbles.length);
         spawn = SPAWN_INTERVAL;
@@ -99,18 +121,30 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
       if (bubbles.some((b) => !b.active)) {
         bubbles = bubbles.filter((b) => b.active);
       }
+      // Filter out expired popups
+      if (popups.some((p) => p.ttl <= 0)) {
+        popups = popups.filter((p) => p.ttl > 0);
+      }
 
       backgroundRenderer.update(dt);
 
       // Update bubble positions
       bubbles.forEach((b) => b.step(dt));
 
+      // Update popup positions and TTL
+      popups.forEach((p) => p.step(dt));
+
       backgroundRenderer.draw(ctx);
 
       bubbles.forEach((b) => bubbleRenderer.render(ctx, b));
+
+      // Draw popups
+      popups.forEach((p) => p.draw(ctx));
     },
-    enter() {
+    async enter() {
       log.info('Play screen entered');
+      await Lang.load('ja'); // blocks until JSON parsed
+      ready = true;
       ResizeService.subscribe(handleResize);
       // Call handleResize once initially to set correct scaling if canvas size differs from prevW/prevH defaults
       handleResize();
@@ -122,6 +156,7 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
       ctx.canvas.removeEventListener('pointerdown', handlePointerDown);
       // Clear bubbles or other screen-specific state if necessary
       bubbles = [];
+      popups = []; // Clear popups as well
     },
   };
 }
