@@ -2,13 +2,19 @@
 // This class is intended to handle the rendering of individual bubbles.
 // For now, Bubble entities manage their own drawing via their .draw() method as per Play.ts pseudo-code.
 // This class can be expanded in the future.
-export default class BubbleRenderer {
-  constructor() {
-    // console.log('BubbleRenderer instantiated. Currently a placeholder.');
-  }
+import { BUBBLE_RADIUS, GROUND_OFFSET } from '../constants.js';
+import type Bubble from '../entities/Bubble.js';
 
-  // Example method if Bubble.draw logic were to be centralized or augmented here:
-  // public renderBubble(ctx: CanvasRenderingContext2D, bubble: import('../entities/Bubble').default): void {
-  //   // bubble.draw(ctx, 0); // Or custom drawing logic
-  // }
+export default class BubbleRenderer {
+  render(ctx: CanvasRenderingContext2D, b: Bubble): void {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(b.x * ctx.canvas.width,
+            ctx.canvas.height - GROUND_OFFSET,
+            BUBBLE_RADIUS, 0, Math.PI * 2);
+    ctx.fillStyle   = b.color;
+    ctx.globalAlpha = 0.5;
+    ctx.fill();
+    ctx.restore();
+  }
 }

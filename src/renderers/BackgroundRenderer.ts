@@ -1,4 +1,5 @@
 // src/renderers/BackgroundRenderer.ts
+import { BACKGROUND_COLOUR } from '../constants.js';
 export default class BackgroundRenderer {
   constructor() {
     // Initialization for background, e.g., load images, set up gradients
@@ -12,7 +13,7 @@ export default class BackgroundRenderer {
   draw(ctx: CanvasRenderingContext2D): void {
     const { width, height } = ctx.canvas;
     // Using a distinct color for the play screen background for now
-    ctx.fillStyle = '#C7CEEA'; // Lavender, consistent with Menu
+    ctx.fillStyle = BACKGROUND_COLOUR;
     ctx.fillRect(0, 0, width, height);
   }
 }

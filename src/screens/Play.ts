@@ -1,25 +1,31 @@
-import Bubble from '../entities/Bubble';
-import paletteJson from '../data/palette.json';
-import BackgroundRenderer from '../renderers/BackgroundRenderer';
-import Logger from '../utils/Logger';
+import Bubble from '../entities/Bubble.js';
+import { COLOURS, SPAWN_INTERVAL } from '../constants.js';
+import BackgroundRenderer from '../renderers/BackgroundRenderer.js';
+import BubbleRenderer from '../renderers/BubbleRenderer.js';
+import Logger from '../utils/Logger.js';
 
 const log = new Logger('Play');
 let fpsTimer = 0;
+let frames = 0;
 
-const COLORS = paletteJson.colors;
-const randColor = () => COLORS[Math.floor(Math.random() * COLORS.length)];
+const randColor = () => COLOURS[Math.floor(Math.random() * COLOURS.length)];
 
 export default function makePlay(ctx: CanvasRenderingContext2D) {
-  const bubbles: Bubble[] = [];
+  let bubbles: Bubble[] = [];
   let spawn = 0;
   const bg = new BackgroundRenderer();
+  const br = new BubbleRenderer();
 
   return {
     update(dt: number) {
+      // === FPS log ============================
       fpsTimer += dt;
-      if (fpsTimer >= 1) { // once per second
-        log.debug('fps', (1/dt).toFixed(0));
+      frames++;
+      if (fpsTimer >= 1) {
+        const fps = Math.round(frames / fpsTimer);
+        log.debug('fps', fps);
         fpsTimer = 0;
+        frames = 0;
       }
 
       spawn -= dt;
@@ -27,13 +33,18 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
         const b = new Bubble(Math.random(), randColor());
         bubbles.push(b);
         log.debug('spawned bubble', bubbles.length);
-        spawn = 1.2;
+        spawn = SPAWN_INTERVAL;
       }
 
       bg.update(dt);
       bg.draw(ctx);
 
-      bubbles.forEach(b => b.draw(ctx, dt));
+      bubbles.forEach(b => br.render(ctx, b));
+
+      // Cull inactive entities
+      if (bubbles.some(b => !b.active)) {
+        bubbles = bubbles.filter(b => b.active);
+      }
     }
   };
 }

@@ -4,10 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "vite --open",
-    "build": "vite build",
-    "preview": "vite preview --open",
-    "lint": "eslint --ext .ts,.js src",
+    "dev": "vite --config config/vite.config.ts --open",
+    "build": "vite build --config config/vite.config.ts",
+    "preview": "vite preview --config config/vite.config.ts --open",
+    "lint": "eslint --config config/eslint.config.js --ext .ts,.js src config",
     "type-check": "tsc --noEmit"
   },
   "keywords": [],
@@ -17,6 +17,7 @@
   "packageManager": "pnpm@10.11.1",
   "devDependencies": {
     "@eslint/js": "^9.28.0",
+    "@types/node": "^22.15.29",
     "@typescript-eslint/eslint-plugin": "^8.33.1",
     "@typescript-eslint/parser": "^8.33.1",
     "eslint": "^9.28.0",

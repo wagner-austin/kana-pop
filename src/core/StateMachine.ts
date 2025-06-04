@@ -1,4 +1,4 @@
-import Logger from '../utils/Logger';
+import Logger from '../utils/Logger.js';
 const log = new Logger('SM');
 
 export interface State {

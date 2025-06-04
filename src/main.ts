@@ -1,7 +1,7 @@
-import resizeCanvas from './utils/resizeCanvas';
-import StateMachine from './core/StateMachine';
-import makeMenu from './screens/Menu';
-import makePlay from './screens/Play';
+import resizeCanvas from './utils/resizeCanvas.js';
+import StateMachine from './core/StateMachine.js';
+import makeMenu from './screens/Menu.js';
+import makePlay from './screens/Play.js';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#game')!;
 const ctx = canvas.getContext('2d')!;

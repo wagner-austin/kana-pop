@@ -1,4 +1,4 @@
-import Logger from '../utils/Logger';
+import Logger from '../utils/Logger.js';
 const log = new Logger('Bubble');
 
 export default class Bubble {
@@ -6,15 +6,7 @@ export default class Bubble {
   constructor(public x: number, public color: string) {
     log.debug('spawn', { x: this.x.toFixed(2), color });
   }
-  draw(ctx: CanvasRenderingContext2D, _dt: number) {
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(this.x * ctx.canvas.width, ctx.canvas.height - 40, 20, 0, Math.PI * 2);
-    ctx.fillStyle = this.color;
-    ctx.globalAlpha = 0.5;
-    ctx.fill();
-    ctx.restore();
-  }
+  // kept intentionally dumb – no Canvas API here
 
   pop() {
     log.info('pop!');

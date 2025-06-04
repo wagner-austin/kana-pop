@@ -1,10 +1,13 @@
-import StateMachine from '../core/StateMachine';
+import StateMachine from '../core/StateMachine.js';
+import { BACKGROUND_COLOUR } from '../constants.js';
 
 export default function makeMenu(sm: StateMachine,
                                  ctx: CanvasRenderingContext2D) {
+  const click = () => sm.change('play');
+
   function paint() {
     const { width, height } = ctx.canvas;
-    ctx.fillStyle = '#C7CEEA';              // pastel background
+    ctx.fillStyle = BACKGROUND_COLOUR;
     ctx.fillRect(0, 0, width, height);
 
     ctx.fillStyle = '#222';                 // dark text
@@ -16,12 +19,12 @@ export default function makeMenu(sm: StateMachine,
   return {
     enter() {
       paint();
-      ctx.canvas.onclick = () => sm.change('play');
+      ctx.canvas.addEventListener('pointerdown', click);
       window.addEventListener('resize', paint);   // keep centred
     },
     update() {},
     exit() {
-      ctx.canvas.onclick = null;
+      ctx.canvas.removeEventListener('pointerdown', click);
       window.removeEventListener('resize', paint);
     }
   };
