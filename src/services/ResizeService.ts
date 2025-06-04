@@ -2,7 +2,7 @@
  * Centralised window-/dpi-resize publisher.
  * Other modules subscribe instead of touching `window` directly.
  */
-import resizeCanvas from '../utils/resizeCanvas'; // Changed from .js
+import resizeCanvas from './ResizeCanvas';
 
 export type ResizeCallback = () => void;
 
@@ -11,6 +11,7 @@ class ResizeService {
   private watchedCanvases = new Map<HTMLCanvasElement, ResizeCallback>();
   private mediaQuery: MediaQueryList | null = null;
   private boundTrigger = this.trigger.bind(this);
+  private dprCallback: (() => void) | null = null;
 
   /** Subscribe and immediately invoke the callback once. */
   subscribe(cb: ResizeCallback): void {
@@ -52,9 +53,11 @@ class ResizeService {
 
   private detachWindowListeners(): void {
     window.removeEventListener('resize', this.boundTrigger);
-    // The DPR listener (this.mediaQuery) uses { once: true } and an anonymous function,
-    // so it removes itself. No need to explicitly remove it here.
+    if (this.dprCallback) {
+      this.mediaQuery?.removeEventListener('change', this.dprCallback);
+    }
     this.mediaQuery = null;
+    this.dprCallback = null;
   }
 
 
@@ -65,22 +68,22 @@ class ResizeService {
    */
   private addDprListener(): void {
     // Tear down any previous query.
-    this.mediaQuery?.removeEventListener('change', this.boundTrigger);
+    if (this.dprCallback) {
+      this.mediaQuery?.removeEventListener('change', this.dprCallback);
+    }
 
     // Set up a fresh one for the current DPR.
     this.mediaQuery =
       matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
 
+    this.dprCallback = () => {
+      this.boundTrigger();
+      this.addDprListener();   // re-attach for the new DPR
+    };
+
     // When it fires we ① notify subscribers and ② arm a new listener
     // for whatever DPR we just switched to.
-    this.mediaQuery.addEventListener(
-      'change',
-      () => {
-        this.boundTrigger();
-        this.addDprListener();   // re-attach for the new DPR
-      },
-      { once: true }
-    );
+    this.mediaQuery.addEventListener('change', this.dprCallback, { once: true });
   }
 }
 
