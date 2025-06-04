@@ -7,3 +7,4 @@ export const BUBBLE_ALPHA      = 0.5;
 import paletteJson from './data/palette.json' with { type: 'json' };
 export const COLOURS: readonly string[] = paletteJson.colors;
 export const BACKGROUND_COLOUR = COLOURS[2]; /* "#C7CEEA" */ // keep one pastel for UI chrome
+export const TEXT_COLOUR_DARK = '#222';

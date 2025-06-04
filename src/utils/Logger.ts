@@ -1,8 +1,9 @@
 // ── src/utils/Logger.ts ───────────────────────────────────────────────
+import { TEXT_COLOUR_DARK } from '../constants';
 type Level = 'debug' | 'info' | 'warn' | 'error';
 
 const COLORS: Record<Level, string> = {
-  debug: '#888',
+  debug: TEXT_COLOUR_DARK,
   info : '#2b90d9',
   warn : '#f6a800',
   error: '#e54242'
