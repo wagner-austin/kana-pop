@@ -18,9 +18,10 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
 
   return {
     update(dt: number) {
-      dt = Math.min(dt, 0.1); // Clamp dt to prevent large jumps
+      const rawDt = dt;             // keep the real frame time for diagnostics
+      dt = Math.min(rawDt, 0.1);    // physics clamp
       // === FPS log ============================
-      fpsTimer += dt;
+      fpsTimer += rawDt;            // use the true elapsed time
       frames++;
       if (fpsTimer >= 1) {
         const fps = Math.round(frames / fpsTimer);
