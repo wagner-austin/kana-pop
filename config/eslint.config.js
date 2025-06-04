@@ -21,12 +21,17 @@ const browserGlobals = {
 // assuming the runtime object structure is correct as per ESLint standards.
 const recommendedLangOptions = js.configs.recommended.languageOptions;
 
+const mergedGlobals = { 
+  ...(recommendedLangOptions?.globals ?? {}), 
+  ...browserGlobals 
+};
+
 export default [
   {
     ...js.configs.recommended,
     languageOptions: {
       ...recommendedLangOptions,
-      globals: { ...(recommendedLangOptions?.globals ?? {}), ...browserGlobals }
+      globals: mergedGlobals
     },
     ignores: ['**/*.json', 'index.html']
   },
@@ -35,7 +40,7 @@ export default [
     languageOptions: {
       parser: tsparser,
       parserOptions: { project: path.resolve('./tsconfig.json'), sourceType: 'module' },
-      globals: browserGlobals
+      globals: mergedGlobals
     },
     plugins: { '@typescript-eslint': tseslint },
     rules: {

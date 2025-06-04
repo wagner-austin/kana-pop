@@ -22,4 +22,8 @@ export default class StateMachine {
     this.current?.enter?.();
   }
   update(dt: number) { this.current?.update?.(dt); }
+
+  get currentStateName(): string | undefined {
+    return this.currentName;
+  }
 }
