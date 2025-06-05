@@ -17,7 +17,7 @@ export const KANA_FONT_RATIO = 0.7;
 export const AUDIO_COOLDOWN = 0.4;
 
 /* ---- haptic ---------------------------------------------------------- */
-export const HAPTIC_DURATION_MS = 15; // tuned for quick “tick”
+export const HAPTIC_DURATION_MS = 50; // increased from 15ms for better Android feedback
 
 /* --- tap-feedback motion constants ------------------------------------ */
 export const BUBBLE_TAP_SCALE = 0.85; // peak scale multiplier (shrinks on tap)

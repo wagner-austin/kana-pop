@@ -65,6 +65,30 @@ window.matchMedia = (q: string) =>
 
 if (!('PointerEvent' in globalThis)) (globalThis as any).PointerEvent = MouseEvent;
 
-// Add shims for HapticService and GyroProvider tests
-Object.defineProperty(globalThis.navigator, 'vibrate', { value: () => true, configurable: true });
-(globalThis as any).DeviceOrientationEvent = function DeviceOrientationEventShim() {};
+// ── shims for HapticService & GyroProvider ───────────────────────────
+const nav = globalThis.navigator as any;
+
+// Fake Vibration API
+if (!nav.vibrate) {
+  Object.defineProperty(nav, 'vibrate', {
+    value: () => true,
+    writable: true,
+    configurable: true,
+  });
+}
+
+// Pretend we're on a Mac with no touch points (jsdom default is '')
+Object.defineProperty(nav, 'platform', {
+  get: () => 'MacIntel',
+  configurable: true,
+});
+Object.defineProperty(nav, 'maxTouchPoints', {
+  value: 0,
+  writable: true,
+  configurable: true,
+});
+
+// Minimal DeviceOrientationEvent shim for GyroProvider
+if (!('DeviceOrientationEvent' in globalThis)) {
+  (globalThis as any).DeviceOrientationEvent = class {};
+}
