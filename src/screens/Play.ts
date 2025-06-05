@@ -1,5 +1,6 @@
 import Bubble from '../entities/Bubble';
-import { COLOURS, SPAWN_INTERVAL, bubbleRadius } from '../constants';
+import { COLOURS, SPAWN_INTERVAL } from '../config/constants';
+import { bubbleRadius } from '../utils/bubble';
 import BackgroundRenderer from '../renderers/BackgroundRenderer';
 import BubbleRenderer from '../renderers/BubbleRenderer';
 import Logger from '../utils/Logger';
@@ -32,6 +33,12 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
 
   const handleResize = () => {
     const { w: newW, h: newH } = cssSize(ctx.canvas);
+
+    /* ── keep cached bubbles in sync with the new zoom ──────────────── */
+    const newR = bubbleRadius(newW, newH);
+    // Radius depends only on the *current* viewport, so we can overwrite
+    // every existing bubble instead of respawning them all.
+    bubbles.forEach((b) => (b.r = newR));
 
     if (prevCssW === 0 || prevCssH === 0) {
       // Avoid division by zero on initial load if dimensions are 0
@@ -77,6 +84,7 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
     update(dt: number) {
       if (!ready) return; // skip the frame until we’re loaded
       applyDprTransform(ctx);
+      const { w: cssW, h: cssH } = cssSize(ctx.canvas);
       const rawDt = dt; // keep the real frame time for diagnostics
       dt = Math.min(rawDt, 0.1); // physics clamp
 
@@ -100,12 +108,13 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
 
           // ---- new: keep the whole bubble on-screen ---------------------------------
           const { w } = cssSize(ctx.canvas); // current CSS-pixel width
-          const rNorm = bubbleRadius() / w; // radius expressed as 0-1 fraction
+          const rPx = bubbleRadius(cssW, cssH); // use *current* size
+          const rNorm = rPx / w;
           const xCentre = rNorm + Math.random() * (1 - 2 * rNorm); // [rNorm , 1 - rNorm]
           const ySpawn = 1 + rNorm; // spawn just below the bottom edge
           // ---------------------------------------------------------------------------
 
-          const b = new Bubble(xCentre, ySpawn, randColor(), glyph, sym.roman);
+          const b = new Bubble(xCentre, ySpawn, randColor(), glyph, sym.roman, rPx);
           bubbles.push(b);
           log.debug('spawned bubble', bubbles.length);
           spawn = SPAWN_INTERVAL;
@@ -127,7 +136,7 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
 
       backgroundRenderer.draw(ctx);
 
-      bubbles.forEach((b) => bubbleRenderer.render(ctx, b));
+      bubbles.forEach((b) => bubbleRenderer.render(ctx, b, cssW, cssH));
     },
     async enter() {
       log.info('Play screen entered');

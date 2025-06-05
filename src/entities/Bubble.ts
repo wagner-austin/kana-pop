@@ -1,11 +1,12 @@
 import Logger from '../utils/Logger';
-import { bubbleRadius, AUDIO_COOLDOWN } from '../constants';
+import { AUDIO_COOLDOWN } from '../config/constants';
 import Sound from '../services/SoundService';
 const log = new Logger('Bubble');
 
 export default class Bubble {
   active: boolean = true;
-  public speed: number = 0.2; // fraction of canvas height per second
+  public speed = 0.2; // fraction of canvas height per second
+  public r: number;
   public showingRomaji = false; // ← new
   private lastSpoken = -Infinity; // ← new
 
@@ -15,7 +16,9 @@ export default class Bubble {
     public color: string,
     public glyph: string,
     public romaji: string,
+    radius: number,
   ) {
+    this.r = radius;
     log.debug('spawn', { x: this.x.toFixed(2), color, glyph: this.glyph });
   }
 
@@ -44,7 +47,6 @@ export default class Bubble {
     const dy = clickPixelY - bubblePixelY;
     const distanceSquared = dx * dx + dy * dy;
 
-    const r = bubbleRadius(); // Fetch radius at time of check
-    return distanceSquared <= r * r;
+    return distanceSquared <= this.r * this.r;
   }
 }
