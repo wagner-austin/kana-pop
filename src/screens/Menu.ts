@@ -22,6 +22,7 @@ export default function makeMenu(sm: StateMachine, ctx: CanvasRenderingContext2D
     enter() {
       ResizeService.subscribe(paint);
       ctx.canvas.addEventListener('pointerdown', click);
+      ctx.canvas.addEventListener('touchstart', click);
     },
     update() {
       paint();
@@ -29,6 +30,7 @@ export default function makeMenu(sm: StateMachine, ctx: CanvasRenderingContext2D
     exit() {
       ResizeService.unsubscribe(paint);
       ctx.canvas.removeEventListener('pointerdown', click);
+      ctx.canvas.removeEventListener('touchstart', click);
     },
   };
 }

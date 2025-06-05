@@ -2,9 +2,13 @@ import ResizeService from './services/ResizeService';
 import StateMachine from './core/StateMachine';
 import makeMenu from './screens/Menu';
 import makePlay from './screens/Play';
+import Sound from './services/SoundService';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#game')!;
 const ctx = canvas.getContext('2d')!;
+
+// Attach immediately, so the *very first* tap counts
+Sound.armFirstGesture(window);
 ResizeService.watchCanvas(canvas);
 
 const sm = new StateMachine();

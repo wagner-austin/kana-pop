@@ -138,13 +138,16 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
     },
     async enter() {
       log.info('Play screen entered');
-      Sound.armFirstGesture(ctx.canvas); // Must be first to arm audio context
 
       // Load language data first to ensure Lang.symbols is populated.
       await Lang.load('ja');
-      // Then, preload all audio files based on the loaded symbols.
-      await Sound.preloadAll(Lang.symbols.map((s) => `${Lang.currentCode}/${s.audio}`));
-      ready = true;
+
+      // Then, kick off audio pre-cache, but **don’t await**
+      Sound.preloadAll(Lang.symbols.map((s) => `${Lang.currentCode}/${s.audio}`)).catch((err) =>
+        log.warn('audio preload', err),
+      );
+
+      ready = true; // start the game immediately
       ResizeService.subscribe(handleResize);
       // Call handleResize once initially to set correct scaling if canvas size differs from prevW/prevH defaults
       handleResize();

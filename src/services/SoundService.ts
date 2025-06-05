@@ -9,30 +9,28 @@ class SoundService {
 
   constructor() {
     this.ready = new Promise<void>((res) => (this.triggerReady = res));
+
+    window.addEventListener('beforeunload', () => {
+      for (const audioEl of this.cache.values()) {
+        audioEl.pause();
+      }
+    });
   }
 
   armFirstGesture(el: EventTarget = window) {
     if (this.armed) return;
     this.armed = true;
-    el.addEventListener(
-      'pointerdown',
-      () => {
-        const a = new Audio(SoundService.SILENT);
-        const playPromise = a.play();
 
-        if (playPromise && typeof playPromise.then === 'function') {
-          playPromise
-            .catch(() => {
-              /* ignored — still counts as gesture */
-            })
-            .finally(() => this.triggerReady());
-        } else {
-          // If play() doesn't return a promise (e.g., JSDOM) or fails to return one,
-          // we still consider the gesture made and trigger readiness.
-          this.triggerReady();
-        }
-      },
-      { once: true, passive: true },
+    const handler = () => {
+      const a = new Audio(SoundService.SILENT);
+      a.play()
+        .catch(() => {})
+        .finally(() => this.triggerReady());
+    };
+
+    // One of these will fire on every modern browser
+    ['pointerdown', 'touchstart', 'mousedown', 'keydown'].forEach((type) =>
+      el.addEventListener(type, handler, { once: true, passive: true }),
     );
   }
 
