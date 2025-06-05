@@ -4,6 +4,8 @@ import js from '@eslint/js';
 import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
+import eslintPluginUnicorn from 'eslint-plugin-unicorn';
+import eslintPluginImport from 'eslint-plugin-import';
 import path from 'node:path';
 
 const browserGlobals = {
@@ -55,12 +57,21 @@ export default [
       parserOptions: { project: path.resolve('./tsconfig.json'), sourceType: 'module' },
       globals: mergedGlobals,
     },
-    plugins: { '@typescript-eslint': tseslint },
+    plugins: {
+      '@typescript-eslint': tseslint,
+      unicorn: eslintPluginUnicorn,
+      import: eslintPluginImport,
+    },
     rules: {
       ...tseslint.configs.recommended.rules,
       'no-console': ['error', { allow: ['warn', 'error'] }],
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       'no-undef': 'off', // core rule mis-fires on TS built-ins like Record
+      // New rules:
+      '@typescript-eslint/consistent-type-imports': 'error',
+      'no-duplicate-imports': 'error',
+      'unicorn/prefer-set-has': 'warn',
+      'import/order': ['error', { 'newlines-between': 'always' }],
     },
   },
   {
