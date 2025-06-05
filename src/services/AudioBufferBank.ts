@@ -1,4 +1,4 @@
-import { isIPadOS, isSafari, requiresSpecialAudioHandling } from '@/utils/DeviceInfo';
+import { requiresSpecialAudioHandling } from '@/utils/DeviceInfo';
 import Logger from '@/utils/Logger';
 
 const log = new Logger('Audio');
@@ -94,16 +94,24 @@ export default class AudioBufferBank {
       if (requiresSpecialAudioHandling()) {
         log.info('iOS/iPadOS detected, playing silent buffer to unlock audio');
 
-        // Create a short silent buffer
+        // Create a longer silent buffer for more reliable unlocking
         const sampleRate = ctx.sampleRate || 44100;
-        const silentBuffer = ctx.createBuffer(1, sampleRate * 0.1, sampleRate); // 100ms buffer
+        const silentBuffer = ctx.createBuffer(2, sampleRate * 0.5, sampleRate); // 500ms stereo buffer
+        
+        // Fill the buffer with silence (all zeros)
+        for (let channel = 0; channel < 2; channel++) {
+          const data = silentBuffer.getChannelData(channel);
+          for (let i = 0; i < data.length; i++) {
+            data[i] = 0;
+          }
+        }
 
-        // For Safari on iPadOS, use a slightly longer duration
-        const playDuration = isIPadOS() && isSafari() ? 0.05 : 0.001;
+        // For iPads, use a longer duration to ensure unlocking
+        const playDuration = requiresSpecialAudioHandling() ? 0.5 : 0.1;
 
         // Create and connect nodes
         const gain = ctx.createGain();
-        gain.gain.value = 0; // Completely silent
+        gain.gain.value = 0.001; // Nearly silent but not quite zero (avoids optimization)
 
         const source = ctx.createBufferSource();
         source.buffer = silentBuffer;
