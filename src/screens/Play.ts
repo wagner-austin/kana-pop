@@ -1,5 +1,5 @@
 import Bubble from '../entities/Bubble';
-import { COLOURS, SPAWN_INTERVAL } from '../constants';
+import { COLOURS, SPAWN_INTERVAL, bubbleRadius } from '../constants';
 import BackgroundRenderer from '../renderers/BackgroundRenderer';
 import BubbleRenderer from '../renderers/BubbleRenderer';
 import Logger from '../utils/Logger';
@@ -101,7 +101,15 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
         if (Lang.symbols && Lang.symbols.length > 0) {
           const sym = Lang.symbols[randInt(Lang.symbols.length)]!;
           const glyph = Lang.randomGlyph(sym);
-          const b = new Bubble(Math.random(), 1.0, randColor(), glyph, sym.roman);
+
+          // ---- new: keep the whole bubble on-screen ---------------------------------
+          const { w } = cssSize(ctx.canvas); // current CSS-pixel width
+          const rNorm = bubbleRadius() / w; // radius expressed as 0-1 fraction
+          const xCentre = rNorm + Math.random() * (1 - 2 * rNorm); // [rNorm , 1 - rNorm]
+          const ySpawn = 1 + rNorm; // spawn just below the bottom edge
+          // ---------------------------------------------------------------------------
+
+          const b = new Bubble(xCentre, ySpawn, randColor(), glyph, sym.roman);
           bubbles.push(b);
           log.debug('spawned bubble', bubbles.length);
           spawn = SPAWN_INTERVAL;

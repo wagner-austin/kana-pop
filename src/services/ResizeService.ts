@@ -54,12 +54,16 @@ class ResizeService {
   }
 
   private attachWindowListeners(): void {
-    window.addEventListener('resize', this.boundTrigger);
-    this.addDprListener();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', this.boundTrigger);
+      this.addDprListener();
+    }
   }
 
   private detachWindowListeners(): void {
-    window.removeEventListener('resize', this.boundTrigger);
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('resize', this.boundTrigger);
+    }
     if (this.dprCallback) {
       this.mediaQuery?.removeEventListener('change', this.dprCallback);
     }
@@ -73,6 +77,10 @@ class ResizeService {
    * the DPR changes so future changes are still caught.
    */
   private addDprListener(): void {
+    if (typeof window === 'undefined' || typeof window.matchMedia === 'undefined') {
+      return; // Not in a browser environment or matchMedia is not supported
+    }
+
     // Tear down any previous query.
     if (this.dprCallback) {
       this.mediaQuery?.removeEventListener('change', this.dprCallback);
