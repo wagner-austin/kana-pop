@@ -2,6 +2,20 @@
 
 <!-- Project description will go here -->
 
+## Architecture
+
+### Cross-environment Services
+
+Kana Pop is designed to run in multiple environments (browser, tests, CI) which may have different capabilities. The following services provide environment-agnostic abstractions:
+
+- **StorageService**: A unified storage wrapper that safely handles persistence across environments
+  - Automatically detects availability of `localStorage`
+  - Falls back to in-memory storage when necessary (Node/tests or Safari private mode)
+  - Provides consistent API (`get`, `set`, `remove`, `clear`) regardless of environment
+  - Logs diagnostic information when falling back to in-memory storage
+
+Never use raw Web Storage APIs (`localStorage`, `sessionStorage`) directly in your code. Always use these service abstractions to ensure code works consistently across all environments.
+
 ## Testing
 
 This project uses [Vitest](https://vitest.dev/) for unit and integration testing. The test suite is designed to cover core logic, services, and UI interactions.
