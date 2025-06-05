@@ -16,29 +16,72 @@ class SoundService {
   public async armFirstGesture(el: EventTarget = window): Promise<void> {
     if (this.isGestureArmed) return;
     this.isGestureArmed = true;
-    // console.log('SoundService: First gesture armed.'); // Kept simpler log commented out for brevity
+    console.warn('SoundService: First gesture armed.');
+
+    // Check if this is an iOS device
+    const isIOS =
+      /iPad|iPhone|iPod/.test(navigator.userAgent) &&
+      !(window as unknown as { MSStream: unknown }).MSStream;
+    console.warn(`Device detected as ${isIOS ? 'iOS' : 'non-iOS'}`);
 
     const handler = () => {
+      console.warn('User interaction detected, attempting to unlock audio...');
+
       // Play a silent sound to ensure the audio context is "unlocked".
       // This is a common workaround for browsers that require user interaction for audio.
       const a = new Audio(SoundService.SILENT);
+
+      // For iOS, we need to set the playback rate explicitly and play inline
+      if (isIOS) {
+        a.setAttribute('playsinline', '');
+        a.muted = true;
+        a.playbackRate = 1.0;
+      }
+
       a.play()
+        .then(() => {
+          console.warn('Silent audio played successfully');
+        })
         .catch((err) => {
           // Log if silent audio play fails, though it's often a non-critical issue.
           console.warn('Silent audio playback for arming gesture failed:', err);
         })
         .finally(async () => {
           // 🔑 Make sure the AudioContext is resumed *inside* the gesture
-          await this.bank.resume();
-          this.triggerReady();
+          try {
+            await this.bank.resume();
+            console.warn('AudioContext resumed successfully in gesture handler');
+            this.triggerReady();
+          } catch (err) {
+            console.error('Failed to resume audio context:', err);
+          }
         });
     };
 
-    // Attach the handler to the first user interaction event.
-    // Using 'pointerdown' as a primary, with fallbacks for broader compatibility.
-    ['pointerdown', 'touchstart', 'mousedown', 'keydown'].forEach((type) =>
-      el.addEventListener(type, handler, { once: true, passive: true }),
-    );
+    // For iOS, we need additional events and multiple attempts
+    if (isIOS) {
+      // iOS particularly needs touchend events
+      const iosEvents = ['touchend', 'touchstart', 'pointerup', 'pointerdown', 'click'];
+      iosEvents.forEach((type) => {
+        el.addEventListener(type, handler, { once: true, passive: true });
+      });
+
+      // Add a backup handler that runs after a delay (helps on some iOS versions)
+      setTimeout(() => {
+        if (!this.triggerReady) return; // Already resolved
+        console.warn('Adding backup iOS audio unlock handler');
+        const backupHandler = async () => {
+          await this.bank.resume();
+          this.triggerReady();
+        };
+        document.body.addEventListener('touchend', backupHandler, { once: true });
+      }, 1000);
+    } else {
+      // For non-iOS, regular events are sufficient
+      ['pointerdown', 'touchstart', 'mousedown', 'keydown'].forEach((type) =>
+        el.addEventListener(type, handler, { once: true, passive: true }),
+      );
+    }
   }
 
   async play(path: string) {
