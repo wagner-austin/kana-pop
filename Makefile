@@ -1,4 +1,4 @@
-.PHONY: help install run serve dev preview lint clean test test-watch test-coverage
+.PHONY: help install run serve dev preview lint clean test test-watch test-coverage savecode savecode-test
 
 # Default target: list available commands
 help:
@@ -22,6 +22,8 @@ help:
 	@echo "  test                  Run all tests once using Vitest."
 	@echo "  test-watch            Run tests in watch mode."
 	@echo "  test-coverage         Generate a test coverage report."
+	@echo "  savecode              Run the 'savecode' utility to capture current codebase state (skips 'test' dir)."
+	@echo "  savecode-test         Run 'savecode' utility including the 'test' directory."
 	@echo "---------------------------------------------------------------------"
 
 # Install dependencies
@@ -80,6 +82,18 @@ test-coverage:
 	@echo "📊 Generating test coverage report..."
 	pnpm test:coverage
 	@echo "✅ Coverage report generated in ./coverage/. Open ./coverage/index.html to view."
+
+# Save code utility
+savecode:
+	@echo "💾 Running savecode utility..."
+	savecode . --skip test .\.vscode\ .\node_modules\ --ext ts html yml webmanifest
+	@echo "✅ Code saved (skipped test dir)."
+
+# Save code utility (including test directory)
+savecode-test:
+	@echo "💾 Running savecode utility (including test dir)..."
+	savecode . --skip .\.vscode\ .\node_modules\ --ext ts html yml webmanifest
+	@echo "✅ Code saved (included test dir)."
 
 # Set default goal to 'help' so running 'make' without arguments shows the help message.
 .DEFAULT_GOAL := help
