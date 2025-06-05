@@ -1,4 +1,11 @@
-import { BUBBLE_ALPHA, FONT_FAMILY, FONT_COLOUR, KANA_FONT_RATIO } from '../config/constants';
+import {
+  BUBBLE_ALPHA,
+  FONT_FAMILY,
+  FONT_COLOUR,
+  KANA_FONT_RATIO,
+  BUBBLE_STROKE_WIDTH,
+  BUBBLE_FLASH_ALPHA,
+} from '../config/constants';
 
 import type Bubble from '@/entities/Bubble';
 
@@ -6,7 +13,7 @@ export default class BubbleRenderer {
   render(ctx: CanvasRenderingContext2D, b: Bubble, w: number, h: number): void {
     const pxX = b.x * w;
     const pxY = b.y * h;
-    const r = b.r;
+    const r = b.r * b.scale; // ← squash / stretch
 
     // circle
     ctx.save();
@@ -17,7 +24,7 @@ export default class BubbleRenderer {
     ctx.fill();
     ctx.restore();
 
-    // ---- kana glyph ----
+    /* ---- kana glyph ---- */
     const label = b.showingRomaji ? b.romaji : b.glyph;
     const ratio = b.showingRomaji ? 0.45 : KANA_FONT_RATIO;
 
@@ -26,5 +33,18 @@ export default class BubbleRenderer {
     ctx.textBaseline = 'middle';
     ctx.font = `${Math.round(r * ratio)}px ${FONT_FAMILY}`;
     ctx.fillText(label, pxX, pxY);
+
+    /* ---- white rim flash ---- */
+    if (b.flashAlpha > 0) {
+      ctx.save();
+      ctx.globalAlpha = b.flashAlpha * BUBBLE_FLASH_ALPHA;
+      ctx.lineWidth = BUBBLE_STROKE_WIDTH;
+      ctx.strokeStyle = '#ffffff';
+
+      ctx.beginPath();
+      ctx.arc(pxX, pxY, r + BUBBLE_STROKE_WIDTH * 0.5, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
   }
 }

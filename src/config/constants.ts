@@ -15,3 +15,9 @@ export const KANA_FONT_RATIO = 0.7;
 
 /** Minimum seconds between successive pronunciations of the *same* bubble */
 export const AUDIO_COOLDOWN = 0.4;
+
+/* --- tap-feedback motion constants ------------------------------------ */
+export const BUBBLE_TAP_SCALE = 0.85; // peak scale multiplier (shrinks on tap)
+export const BUBBLE_FLASH_DURATION = 0.15; // seconds the rim flash lasts
+export const BUBBLE_FLASH_ALPHA = 0.6; // starting opacity of the rim
+export const BUBBLE_STROKE_WIDTH = 4; // css-px width of the rim stroke
