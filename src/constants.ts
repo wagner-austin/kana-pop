@@ -15,3 +15,8 @@ export function bubbleRadius(): number {
   const cssHeight = ResizeService.cssHeight || window.innerHeight; // Fallback if ResizeService not ready
   return Math.min(cssWidth, cssHeight) * 0.06;
 }
+
+export const FONT_FAMILY = 'Noto Sans JP, sans-serif';
+export const FONT_COLOUR = TEXT_COLOUR_DARK;
+
+export const KANA_FONT_RATIO = 0.7;
