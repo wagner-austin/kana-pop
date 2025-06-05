@@ -1,6 +1,12 @@
 import Logger from '../utils/Logger';
-import { AUDIO_COOLDOWN, BUBBLE_TAP_SCALE, BUBBLE_FLASH_DURATION } from '../config/constants';
+import {
+  AUDIO_COOLDOWN,
+  BUBBLE_TAP_SCALE,
+  BUBBLE_FLASH_DURATION,
+  HAPTIC_DURATION_MS,
+} from '../config/constants';
 import Sound from '../services/SoundService';
+import Haptics from '../services/HapticService';
 const log = new Logger('Bubble');
 
 export default class Bubble {
@@ -34,6 +40,9 @@ export default class Bubble {
 
     this.showingRomaji = !this.showingRomaji;
     Sound.playRoman(this.romaji);
+
+    /* --- NEW: subtle vibration -------------------------------------- */
+    Haptics.vibrate(HAPTIC_DURATION_MS);
 
     /* -------- visual feedback -------- */
     this.scale = BUBBLE_TAP_SCALE;

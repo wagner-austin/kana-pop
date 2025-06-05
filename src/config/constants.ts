@@ -16,6 +16,9 @@ export const KANA_FONT_RATIO = 0.7;
 /** Minimum seconds between successive pronunciations of the *same* bubble */
 export const AUDIO_COOLDOWN = 0.4;
 
+/* ---- haptic ---------------------------------------------------------- */
+export const HAPTIC_DURATION_MS = 15; // tuned for quick “tick”
+
 /* --- tap-feedback motion constants ------------------------------------ */
 export const BUBBLE_TAP_SCALE = 0.85; // peak scale multiplier (shrinks on tap)
 export const BUBBLE_FLASH_DURATION = 0.15; // seconds the rim flash lasts
