@@ -45,7 +45,7 @@ class SoundService {
       // console.log('Skipping playback for fallback.mp3');
       return;
     }
-    const url = withHash(`/audio/${path}`); // Assuming audio files are in /public/audio/
+    const url = withHash(`${import.meta.env.BASE_URL}audio/${path}`); // Assuming audio files are in /public/audio/
     let el = this.cache.get(url);
     if (!el) {
       el = new Audio(url);
@@ -69,7 +69,7 @@ class SoundService {
       paths.map(
         (p) =>
           new Promise<void>((resolvePathPromise) => {
-            const url = withHash(`/audio/${p}`);
+            const url = withHash(`${import.meta.env.BASE_URL}audio/${p}`);
             const el = new Audio(url);
 
             // Mute the element before defining/running the warm function.

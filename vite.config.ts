@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [tsconfigPaths()],
-    base: process.env.BASE_PATH ?? '/', // Kept existing base
+    base: '/kana-pop/', // Kept existing base
     build: { outDir: 'docs' }, // Kept existing build config
     define: {
       'import.meta.env.VITE_BUILD_HASH': JSON.stringify(
