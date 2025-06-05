@@ -10,7 +10,7 @@ import {
 import type Bubble from '@/entities/Bubble';
 
 export default class BubbleRenderer {
-  /** 
+  /**
    * We still accept parallax parameter for API consistency, but bubbles now stay in place
    * while the background moves for the parallax effect.
    */
