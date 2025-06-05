@@ -1,5 +1,5 @@
 // src/renderers/BackgroundRenderer.ts
-import { BACKGROUND_COLOUR } from '../constants';
+import { BACKGROUND_COLOUR } from '../config/constants';
 import { cssSize } from '../utils/canvasMetrics';
 export default class BackgroundRenderer {
   constructor() {

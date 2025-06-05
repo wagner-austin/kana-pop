@@ -12,8 +12,11 @@
 export function isIOS(): boolean {
   if (typeof navigator === 'undefined') return false;
 
-  const ua = navigator.userAgent;
-  return /iPad|iPhone|iPod/.test(ua) && !(window as unknown as { MSStream: unknown }).MSStream;
+  const ua = typeof navigator === 'undefined' ? '' : navigator.userAgent;
+  return (
+    /iPad|iPhone|iPod/.test(ua) &&
+    !(typeof window !== 'undefined' && (window as unknown as { MSStream: unknown }).MSStream)
+  );
 }
 
 /**
@@ -23,8 +26,13 @@ export function isIOS(): boolean {
 export function isIPadOS(): boolean {
   if (typeof navigator === 'undefined') return false;
 
-  const ua = navigator.userAgent;
-  return /iPad/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const ua = typeof navigator === 'undefined' ? '' : navigator.userAgent;
+  return (
+    /iPad/.test(ua) ||
+    (typeof navigator !== 'undefined' &&
+      navigator.platform === 'MacIntel' &&
+      navigator.maxTouchPoints > 1)
+  );
 }
 
 /**
@@ -33,7 +41,7 @@ export function isIPadOS(): boolean {
 export function isSafari(): boolean {
   if (typeof navigator === 'undefined') return false;
 
-  const ua = navigator.userAgent;
+  const ua = typeof navigator === 'undefined' ? '' : navigator.userAgent;
   return /Safari/.test(ua) && !/Chrome/.test(ua);
 }
 
@@ -49,7 +57,7 @@ export function requiresSpecialAudioHandling(): boolean {
   if (isIOS() || isIPadOS()) return true;
 
   // Add a fallback detection based on userAgent directly
-  const ua = navigator.userAgent;
+  const ua = typeof navigator === 'undefined' ? '' : navigator.userAgent;
   if (/iPad|iPhone|iPod/.test(ua)) return true;
 
   // iPadOS 13+ doesn't show iPad in UA, and appears as Mac with touch support

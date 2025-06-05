@@ -13,7 +13,7 @@ vi.mock('@/utils/canvasMetrics', async (importOriginal) => {
 
 // Mock bubbleRadius from constants as it also depends on ResizeService/window
 vi.mock('@/constants', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/constants')>();
+  const actual = await importOriginal<typeof import('../src/config/constants')>();
   return {
     ...actual,
     KANA_FONT_RATIO: actual.KANA_FONT_RATIO || 0.7,
@@ -25,7 +25,7 @@ vi.mock('@/constants', async (importOriginal) => {
 
 describe('BubbleRenderer', () => {
   it('all configured layers render without throw', () => {
-    const b = new Bubble(0.5, 0.5, '#fff', 'か', 'ka');
+    const b = new Bubble(0.5, 0.5, '#fff', 'か', 'ka', 10);
 
     // OffscreenCanvas might not be available in all test environments (e.g., Node without 'canvas' package).
     // If running in Node and OffscreenCanvas is not polyfilled or available, this will fail.
@@ -49,6 +49,6 @@ describe('BubbleRenderer', () => {
     if (!ctx) return; // Guard for type checker, though try-catch should handle context creation failure
 
     const renderer = new BubbleRenderer();
-    expect(() => renderer.render(ctx, b)).not.toThrow();
+    expect(() => renderer.render(ctx, b, 800, 600)).not.toThrow();
   });
 });

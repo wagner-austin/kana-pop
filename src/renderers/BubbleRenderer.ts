@@ -1,13 +1,11 @@
-import { bubbleRadius, BUBBLE_ALPHA, FONT_FAMILY, FONT_COLOUR, KANA_FONT_RATIO } from '@/constants';
+import { BUBBLE_ALPHA, FONT_FAMILY, FONT_COLOUR, KANA_FONT_RATIO } from '../config/constants';
 import Bubble from '@/entities/Bubble';
-import { cssSize } from '@/utils/canvasMetrics';
 
 export default class BubbleRenderer {
-  render(ctx: CanvasRenderingContext2D, b: Bubble): void {
-    const { w, h } = cssSize(ctx.canvas);
+  render(ctx: CanvasRenderingContext2D, b: Bubble, w: number, h: number): void {
     const pxX = b.x * w;
     const pxY = b.y * h;
-    const r = bubbleRadius();
+    const r = b.r;
 
     // circle
     ctx.save();

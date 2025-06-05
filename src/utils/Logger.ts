@@ -1,5 +1,5 @@
 // ── src/utils/Logger.ts ───────────────────────────────────────────────
-import { TEXT_COLOUR_DARK } from '../constants';
+import { TEXT_COLOUR_DARK } from '../config/constants';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'off';
 
@@ -18,6 +18,7 @@ export default class Logger {
   // Read and cache the log level from localStorage at boot.
   // Defaults to 'info' if no valid level is found.
   public static bootLevel: LogLevel = (() => {
+    if (typeof globalThis === 'undefined' || !('localStorage' in globalThis)) return 'info';
     const raw = localStorage.getItem('logLevel');
     const validLevels: ReadonlyArray<LogLevel> = ['debug', 'info', 'warn', 'error', 'off'];
     // Ensure the stored value is a valid LogLevel.
