@@ -43,21 +43,25 @@ export class HapticService {
 
       // Test vibration on init to improve chances of working later
       // (Some mobile browsers require user interaction first)
-      // Add listener for both touchstart and click to better handle Android activation
+      // Add listener for both touchstart and click to better handle activation
       const activateHaptics = () => {
         if (this.lastVibration === 0) {
-          // iOS requires simpler patterns, Android benefits from patterns
+          // Initialize with a clear, safe vibration pattern that works on both platforms
+          // We use a direct call to navigator.vibrate to avoid our own throttle
           if (this.isIOS) {
-            // iOS typically ignores patterns and only uses the first number
-            // Using a longer single vibration works better
+            // iOS works better with a single longer vibration
             navigator.vibrate(100);
             this.updateDebugStatus('iOS vibration activated');
           } else {
-            // Stronger initial vibration sequence for Android
-            navigator.vibrate([10, 30, 50]);
+            // Android works better with properly formed even-length patterns
+            // Using [0, 100] ensures the pattern starts with a pause (0ms) then vibrates
+            navigator.vibrate([0, 100]);
             this.updateDebugStatus('Android vibration activated');
           }
-          this.lastVibration = Date.now();
+
+          // Special handling of lastVibration for initialization:
+          // Set it to a past time to allow immediate vibrations after this
+          this.lastVibration = Date.now() - 400; // This allows another vibration immediately after
         }
       };
 
@@ -78,65 +82,62 @@ export class HapticService {
    * @param pattern - Number of milliseconds to vibrate or pattern array
    * @param intensity - Intensity level (1=subtle, 2=medium, 3=strong)
    */
-  vibrate(pattern: number | number[] = 15, intensity: 1 | 2 | 3 = 2): void {
-    if (!this.enabled) return;
+  /**
+   * Fire a vibration with pattern support.
+   * Optimized for compatibility across Android and iOS devices.
+   *
+   * @param pattern - Number of milliseconds to vibrate or pattern array
+   * @param intensity - Intensity level (1=subtle, 2=medium, 3=strong)
+   * @returns boolean indicating if vibration was attempted
+   */
+  vibrate(pattern: number | number[] = 50, intensity: 1 | 2 | 3 = 2): boolean {
+    if (!this.enabled) return false;
 
-    // Add throttle to prevent frequent vibrations
+    // Add throttle to prevent frequent vibrations (using 300ms for safer gap)
     const now = Date.now();
-    if (now - this.lastVibration < 200) return; // iOS system window
+    if (now - this.lastVibration < 300) return false;
 
     try {
-      // Different patterns based on intensity
-      let actualPattern: number | number[];
+      let actual: number | number[] = pattern;
 
-      /* ---- ① collapse arrays to a single duration ---- */
-      if (Array.isArray(pattern)) {
-        // use the longest element as the pulse length
-        pattern = Math.max(...pattern);
-      }
+      // Keep patterns; only build them when caller gives a single number
+      if (!Array.isArray(pattern)) {
+        // Enforce minimum duration of 50ms for better hardware compatibility
+        const p = Math.max(pattern, 50);
+        const gap = HAPTIC_PULSE_GAP_MS;
 
-      if (typeof pattern === 'number') {
-        switch (intensity) {
-          case 1: // Subtle
-            actualPattern = pattern;
-            break;
-          case 2: // Medium
-            // For medium intensity (iOS vs Android optimization)
-            if (this.isIOS) {
-              // iOS works better with a single longer vibration
-              actualPattern = pattern * 1.5; // Slightly longer
-            } else {
-              // Android works well with patterns
-              actualPattern =
-                pattern > 10 ? [pattern, HAPTIC_PULSE_GAP_MS, pattern] : [pattern, pattern];
-            }
-            break;
-          case 3: // Strong
-            // For strong intensity (iOS vs Android optimization)
-            if (this.isIOS) {
-              // iOS works better with a single longer vibration than patterns
-              actualPattern = pattern * 2; // Double duration for strong
-            } else {
-              // Android works well with complex patterns
-              actualPattern =
-                pattern > 10
-                  ? [pattern, HAPTIC_PULSE_GAP_MS, pattern, HAPTIC_PULSE_GAP_MS, pattern]
-                  : [pattern, HAPTIC_PULSE_GAP_MS, pattern];
-            }
-            break;
-          default:
-            actualPattern = pattern;
+        if (this.isIOS) {
+          // iOS works better with a single longer vibration
+          actual = intensity === 3 ? p * 2 : p * 1.5;
+        } else {
+          // Android works better with even-length pattern arrays
+          switch (intensity) {
+            case 1: // Subtle
+              actual = p;
+              break;
+            case 2: // Medium
+              actual = [p, gap, p];
+              break;
+            case 3: // Strong
+              actual = [p, gap, p, gap, p];
+              break;
+          }
         }
-      } else {
-        actualPattern = pattern;
       }
 
-      navigator.vibrate(actualPattern);
-      this.lastVibration = now;
-      this.updateDebugStatus(`Vibrated: ${JSON.stringify(actualPattern)}`);
+      // Call the native API and check for success
+      const ok = navigator.vibrate(actual);
+      if (ok) {
+        this.lastVibration = now;
+        this.updateDebugStatus(`Vibrated: ${JSON.stringify(actual)}`);
+      } else {
+        this.updateDebugStatus('Vibration rejected (blocked by browser)');
+      }
+      return ok;
     } catch (e) {
       console.warn('Vibration failed:', e);
       this.updateDebugStatus(`Failed: ${e}`);
+      return false;
     }
   }
 
