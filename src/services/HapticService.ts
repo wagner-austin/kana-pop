@@ -89,6 +89,12 @@ export class HapticService {
       // Different patterns based on intensity
       let actualPattern: number | number[];
 
+      /* ---- ① collapse arrays to a single duration ---- */
+      if (Array.isArray(pattern)) {
+        // use the longest element as the pulse length
+        pattern = Math.max(...pattern);
+      }
+
       if (typeof pattern === 'number') {
         switch (intensity) {
           case 1: // Subtle
