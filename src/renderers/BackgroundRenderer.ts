@@ -1,10 +1,14 @@
 // src/renderers/BackgroundRenderer.ts
 import { BACKGROUND_COLOUR } from '../config/constants';
 import { cssSize } from '../utils/canvasMetrics';
+import Logger from '../utils/Logger';
+
 export default class BackgroundRenderer {
+  private logger = new Logger('BackgroundRenderer');
+
   constructor() {
     // Initialization for background, e.g., load images, set up gradients
-    // console.log('BackgroundRenderer instantiated');
+    this.logger.debug('BackgroundRenderer instantiated');
   }
 
   update(_dt: number): void {
