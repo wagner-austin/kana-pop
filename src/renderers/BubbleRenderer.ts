@@ -1,5 +1,6 @@
 import { BUBBLE_ALPHA, FONT_FAMILY, FONT_COLOUR, KANA_FONT_RATIO } from '../config/constants';
-import Bubble from '@/entities/Bubble';
+
+import type Bubble from '@/entities/Bubble';
 
 export default class BubbleRenderer {
   render(ctx: CanvasRenderingContext2D, b: Bubble, w: number, h: number): void {

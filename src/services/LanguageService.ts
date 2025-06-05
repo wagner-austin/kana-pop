@@ -1,6 +1,7 @@
-import { LanguageDef, SymbolDef } from '@/types/language';
-// Import the manifest directly. This provides metadata for all available languages.
 import languageManifestFile from '../data/lang/index.json' assert { type: 'json' };
+
+import type { LanguageDef, SymbolDef } from '@/types/language';
+// Import the manifest directly. This provides metadata for all available languages.
 import StorageService from '@/utils/StorageService';
 import Logger from '@/utils/Logger';
 

@@ -1,5 +1,6 @@
-import Lang from '@/services/LanguageService';
 import AudioBufferBank from './AudioBufferBank';
+
+import Lang from '@/services/LanguageService';
 import Logger from '@/utils/Logger';
 import { requiresSpecialAudioHandling } from '@/utils/DeviceInfo';
 

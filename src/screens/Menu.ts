@@ -1,4 +1,4 @@
-import StateMachine from '../core/StateMachine';
+import type StateMachine from '../core/StateMachine';
 import { BACKGROUND_COLOUR, TEXT_COLOUR_DARK } from '../config/constants';
 import ResizeService from '../services/ResizeService';
 import { applyDprTransform, cssSize } from '../utils/canvasMetrics';
