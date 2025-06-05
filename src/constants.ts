@@ -20,3 +20,6 @@ export const FONT_FAMILY = 'Noto Sans JP, sans-serif';
 export const FONT_COLOUR = TEXT_COLOUR_DARK;
 
 export const KANA_FONT_RATIO = 0.7;
+
+/** Minimum seconds between successive pronunciations of the *same* bubble */
+export const AUDIO_COOLDOWN = 0.4;

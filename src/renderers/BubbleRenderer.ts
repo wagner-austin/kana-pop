@@ -19,10 +19,13 @@ export default class BubbleRenderer {
     ctx.restore();
 
     // ---- kana glyph ----
+    const label = b.showingRomaji ? b.romaji : b.glyph;
+    const ratio = b.showingRomaji ? 0.45 : KANA_FONT_RATIO;
+
     ctx.fillStyle = FONT_COLOUR;
-    ctx.textAlign = 'center'; // Glyphs in bubbles should always be centered.
+    ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = `${Math.round(r * KANA_FONT_RATIO)}px ${FONT_FAMILY}`;
-    ctx.fillText(b.glyph, pxX, pxY);
+    ctx.font = `${Math.round(r * ratio)}px ${FONT_FAMILY}`;
+    ctx.fillText(label, pxX, pxY);
   }
 }

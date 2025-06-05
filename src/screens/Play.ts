@@ -7,7 +7,6 @@ import { cssSize, applyDprTransform } from '../utils/canvasMetrics';
 import ResizeService from '../services/ResizeService';
 import Lang from '../services/LanguageService';
 import Sound from '../services/SoundService';
-import FloatingRomaji from '../entities/FloatingRomaji';
 
 const log = new Logger('Play');
 let fpsTimer = 0;
@@ -28,7 +27,7 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
   let spawn = 0;
   const bubbleRenderer = new BubbleRenderer();
   const backgroundRenderer = new BackgroundRenderer();
-  let romajiSprites: FloatingRomaji[] = [];
+
   let ready = false;
 
   const handleResize = () => {
@@ -68,10 +67,7 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
     for (let i = bubbles.length - 1; i >= 0; i--) {
       const bubble = bubbles[i];
       if (bubble && bubble.contains(clickPixelX, clickPixelY, w, h)) {
-        bubble.pop();
-        Sound.playRoman(bubble.romaji);
-        romajiSprites.push(new FloatingRomaji(bubble.x, bubble.y, bubble.romaji, bubble.speed));
-        // Optional: break here if only one bubble can be popped per click
+        bubble.handleClick(performance.now() / 1000);
         break;
       }
     }
@@ -124,25 +120,14 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
       if (bubbles.some((b) => !b.active)) {
         bubbles = bubbles.filter((b) => b.active);
       }
-      // Filter out expired popups
-      if (romajiSprites.some((p) => p.ttl <= 0)) {
-        romajiSprites = romajiSprites.filter((p) => p.ttl > 0);
-      }
-
       backgroundRenderer.update(dt);
 
       // Update bubble positions
       bubbles.forEach((b) => b.step(dt));
 
-      // Update popup positions and TTL
-      romajiSprites.forEach((p) => p.step(dt));
-
       backgroundRenderer.draw(ctx);
 
       bubbles.forEach((b) => bubbleRenderer.render(ctx, b));
-
-      // Draw popups
-      romajiSprites.forEach((p) => p.draw(ctx));
     },
     async enter() {
       log.info('Play screen entered');
@@ -166,8 +151,7 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
       ResizeService.unsubscribe(handleResize);
       ctx.canvas.removeEventListener('pointerdown', handlePointerDown);
       // Clear bubbles or other screen-specific state if necessary
-      bubbles = [];
-      romajiSprites = []; // Clear popups as well
+      bubbles = []; // Clear for replay
     },
   };
 }

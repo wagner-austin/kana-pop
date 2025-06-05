@@ -1,10 +1,13 @@
 import Logger from '../utils/Logger';
-import { bubbleRadius } from '../constants';
+import { bubbleRadius, AUDIO_COOLDOWN } from '../constants';
+import Sound from '../services/SoundService';
 const log = new Logger('Bubble');
 
 export default class Bubble {
   active: boolean = true;
   public speed: number = 0.2; // fraction of canvas height per second
+  public showingRomaji = false; // ← new
+  private lastSpoken = -Infinity; // ← new
 
   constructor(
     public x: number,
@@ -15,12 +18,15 @@ export default class Bubble {
   ) {
     log.debug('spawn', { x: this.x.toFixed(2), color, glyph: this.glyph });
   }
-  // kept intentionally dumb – no Canvas API here
 
-  pop() {
-    log.info('pop!');
-    this.active = false;
-    // Add any other logic for when a bubble is popped, e.g., sound effects, score updates
+  /** Toggle romaji ↔ kana and play the audio, observing cooldown */
+  handleClick(nowSec: number) {
+    if (nowSec - this.lastSpoken < AUDIO_COOLDOWN) return;
+    this.lastSpoken = nowSec;
+
+    this.showingRomaji = !this.showingRomaji;
+    Sound.playRoman(this.romaji);
+    log.debug('toggle', { romaji: this.showingRomaji });
   }
 
   step(dt: number) {
