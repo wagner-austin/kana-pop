@@ -10,9 +10,21 @@ import {
 import type Bubble from '@/entities/Bubble';
 
 export default class BubbleRenderer {
-  render(ctx: CanvasRenderingContext2D, b: Bubble, w: number, h: number): void {
-    const pxX = b.x * w;
-    const pxY = b.y * h;
+  /** parallax = motion offset in –1..1 — pass null for none (tests). */
+  render(
+    ctx: CanvasRenderingContext2D,
+    b: Bubble,
+    w: number,
+    h: number,
+    parallax?: { x: number; y: number },
+  ): void {
+    const PARALLAX_STRENGTH = 20; // css-px max bubble shift (≈⅓ of stars)
+    // Bubbles move *opposite* the background so the effect is obvious.
+    const shiftX = (parallax?.x ?? 0) * -PARALLAX_STRENGTH;
+    const shiftY = (parallax?.y ?? 0) * -PARALLAX_STRENGTH;
+
+    const pxX = b.x * w + shiftX;
+    const pxY = b.y * h + shiftY;
     const r = b.r * b.scale; // ← squash / stretch
 
     // circle
