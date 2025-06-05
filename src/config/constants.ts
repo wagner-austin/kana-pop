@@ -3,9 +3,21 @@ export const SPAWN_INTERVAL = 1.2; // s
 export const BUBBLE_ALPHA = 0.5;
 
 // Colours come from JSON so designers can edit without code-changes.
-import paletteJson from '../data/palette.json' assert { type: 'json' };
-export const COLOURS = paletteJson.colors as readonly string[];
-export const BACKGROUND_COLOUR = COLOURS[2] ?? '#C7CEEA'; // keep one pastel for UI chrome, fallback if undefined
+
+const FALLBACK = ['#ffaaa5', '#ffd3b6', '#c7ceea', '#e2f0cb', '#b5ead7'] as const;
+
+let currentPalette: readonly string[] | null = null;
+export function setThemePalette(p: readonly string[]) {
+  currentPalette = p;
+}
+
+export function themeColours(): readonly string[] {
+  return currentPalette ?? FALLBACK;
+}
+export function backgroundColour(): string {
+  const p = currentPalette ?? FALLBACK;
+  return p[2] ?? '#c7ceea';
+}
 export const TEXT_COLOUR_DARK = '#222';
 
 export const FONT_FAMILY = 'Noto Sans JP, sans-serif';

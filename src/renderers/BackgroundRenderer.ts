@@ -1,13 +1,13 @@
 // src/renderers/BackgroundRenderer.ts
 import {
-  BACKGROUND_COLOUR,
+  backgroundColour,
   IS_DEV,
   DEBUG_MOTION_THROTTLE_MS,
   DEBUG_ELEMENT_ID_PREFIX,
 } from '../config/constants';
-import { cssSize } from '../utils/canvasMetrics';
 import Logger from '../utils/Logger';
 
+import Theme from '@/services/ThemeService'; // Corrected path alias
 import {
   type MotionSample,
   type MotionProvider,
@@ -103,7 +103,7 @@ export default class BackgroundRenderer {
       // though it's already imported statically for `instanceof` checks.
       // Using the statically imported class is cleaner.
       this.motionProvider = new DummyScrollProvider();
-      this.motionProvider.start((v) => (this.offset = v));
+      this.motionProvider.start((v) => (this.rawOffset = v));
       this.logger.info('DummyScrollProvider started as fallback.');
     }
   }
@@ -130,15 +130,32 @@ export default class BackgroundRenderer {
   // Keep track of last debug update time
   private _lastDebugUpdate = 0;
 
-  draw(ctx: CanvasRenderingContext2D): void {
-    const { w, h } = cssSize(ctx.canvas); // css-pixel values
+  draw(delta: number, ctx: CanvasRenderingContext2D): void {
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0); // undo the global scale(dpr,dpr)
 
-    /* ----- solid colour base ----- */
-    ctx.fillStyle = BACKGROUND_COLOUR;
-    ctx.fillRect(0, 0, w, h);
+    /* let the theme effect have first shot at painting */
+    // Theme.theme.effect.update expects CSS pixels for its drawing logic if it's an ImageEffect
+    // or if it's drawing based on CSS dimensions. However, since we've reset the transform,
+    // it will draw in raw canvas pixels. If the effect needs to know the CSS dimensions,
+    // it should use cssSize(ctx.canvas).
+    const painted = Theme.theme?.effect?.update(delta, ctx);
 
-    // No star field - just the solid background color
-    // We maintain the offset data for bubble parallax, but don't draw anything extra
+    if (!painted) {
+      // We are in *internal* pixels now, so use canvas width/height directly (which are already dpr scaled)
+      // or if fillRect needs CSS pixels, multiply cssSize by dpr.
+      // Given fillRect operates on the current transform, and we've reset it to identity,
+      // we should fill the entire canvas using its actual pixel dimensions.
+      ctx.fillStyle = backgroundColour();
+      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height); // Use actual canvas pixel dimensions
+    }
+
+    ctx.restore(); // back to dpr-scaled space for bubbles
+  }
+
+  /* resize hook from ResizeService */
+  handleResize(w: number, h: number, dpr: number) {
+    Theme.theme.effect.resize(w, h, dpr);
   }
 
   // Call this method if the renderer is being destroyed or background changes

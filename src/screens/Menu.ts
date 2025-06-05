@@ -1,5 +1,5 @@
 import type StateMachine from '../core/StateMachine';
-import { BACKGROUND_COLOUR, TEXT_COLOUR_DARK } from '../config/constants';
+import { backgroundColour, TEXT_COLOUR_DARK } from '../config/constants';
 import ResizeService from '../services/ResizeService';
 import { applyDprTransform, cssSize } from '../utils/canvasMetrics';
 
@@ -9,7 +9,7 @@ export default function makeMenu(sm: StateMachine, ctx: CanvasRenderingContext2D
   function paint() {
     applyDprTransform(ctx); // Ensure transform is active for every paint
     const { w: width, h: height } = cssSize(ctx.canvas);
-    ctx.fillStyle = BACKGROUND_COLOUR;
+    ctx.fillStyle = backgroundColour();
     ctx.fillRect(0, 0, width, height);
 
     ctx.fillStyle = TEXT_COLOUR_DARK; // dark text

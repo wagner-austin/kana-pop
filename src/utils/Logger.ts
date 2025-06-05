@@ -14,7 +14,7 @@ const COLORS: Record<Exclude<LogLevel, 'off'>, string> = {
 // Logging is active only in development to allow Vite to tree-shake it in production.
 const ACTIVE = import.meta.env.DEV;
 
-export default class Logger {
+class Logger {
   // Read and cache the log level from localStorage at boot.
   // Defaults to 'info' if no valid level is found.
   public static bootLevel: LogLevel = (() => {
@@ -99,7 +99,11 @@ function makeRootLogger() {
   };
 }
 
+export default Logger;
+
 // Expose the logger utility on the window object for easy access from DevTools.
-window.logger = makeRootLogger();
+if (typeof window !== 'undefined') {
+  window.logger = makeRootLogger();
+}
 
 export const logLevel = Logger.bootLevel; // so non-class code can read it

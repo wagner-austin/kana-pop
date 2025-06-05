@@ -1,0 +1,5 @@
+{
+  "name": "Pastel Pond",
+  "assets": { "palette": "palette.json", "background": "background.jpg" },
+  "effect": { "type": "image", "file": "background.png" }
+}

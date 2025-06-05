@@ -7,6 +7,9 @@ import { cssSize, applyDprTransform } from '../utils/canvasMetrics';
 import ResizeService from '../services/ResizeService';
 import Lang from '../services/LanguageService';
 import Sound from '../services/SoundService';
+import StorageService from '../services/StorageService'; // Changed to relative path
+
+import Theme from '@/services/ThemeService'; // Added
 
 const log = new Logger('Play');
 let fpsTimer = 0;
@@ -21,6 +24,13 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
 
   const handleResize = () => bubbles.handleResize();
   const input = new PointerInput(ctx.canvas, bubbles);
+
+  // Named resize handler for the background renderer to allow unsubscribing
+  const bgResizeHandler = () => {
+    if (!ResizeService) return; // Guard against ResizeService being undefined if called too early/late
+    const { cssWidth: w, cssHeight: h, dpr } = ResizeService;
+    if (backgroundRenderer) backgroundRenderer.handleResize(w, h, dpr);
+  };
 
   return {
     update(dt: number) {
@@ -46,7 +56,7 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
 
       backgroundRenderer.update(dt);
 
-      backgroundRenderer.draw(ctx);
+      backgroundRenderer.draw(dt, ctx);
 
       const parallax = backgroundRenderer.getOffset();
       bubbles.entities.forEach((b) => bubbleRenderer.render(ctx, b, cssW, cssH, parallax));
@@ -54,6 +64,12 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
     async enter() {
       log.info('Play screen entered');
 
+      /* ① theme ---------------------------------------- */
+      await Theme.load(StorageService.get('kanaPop.theme') ?? 'assets/themes/pastel-pond/');
+      bubbles.clear();
+      bubbles.handleResize(); // Refresh bubble sizes with current canvas dimensions
+
+      /* ② language ------------------------------------- */
       // Load language data first to ensure Lang.symbols is populated.
       await Lang.load('ja');
 
@@ -64,6 +80,7 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
 
       ready = true; // start the game immediately
       ResizeService.subscribe(handleResize);
+      ResizeService.subscribe(bgResizeHandler);
       // Call handleResize once initially to set correct scaling if canvas size differs from prevW/prevH defaults
       handleResize();
       input.attach();
@@ -71,6 +88,7 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
     exit() {
       log.info('Play screen exited');
       ResizeService.unsubscribe(handleResize);
+      ResizeService.unsubscribe(bgResizeHandler); // Unsubscribe background resize handler
       input.detach();
       bubbles.clear();
       /* stop gyro / fallback RAF to avoid leaks */

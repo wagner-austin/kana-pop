@@ -1,6 +1,6 @@
 import Bubble from '../entities/Bubble';
 import { bubbleRadius } from '../utils/bubble';
-import { COLOURS, SPAWN_INTERVAL } from '../config/constants';
+import { themeColours, SPAWN_INTERVAL } from '../config/constants';
 import Lang from '../services/LanguageService';
 import Logger from '../utils/Logger';
 import { cssSize } from '../utils/canvasMetrics';
@@ -8,8 +8,16 @@ import { cssSize } from '../utils/canvasMetrics';
 const log = new Logger('BubbleMgr');
 
 const randInt = (max: number) => Math.floor(Math.random() * max);
-const randColour = () =>
-  COLOURS.length ? (COLOURS[randInt(COLOURS.length)] ?? '#FFFFFF') : '#FFFFFF';
+const randColour = (): string => {
+  const colours = themeColours();
+  if (colours.length === 0) {
+    return '#ffffff'; // Default color if no theme colors are available
+  }
+  // randInt(max) returns value from 0 to max-1.
+  // So, colours[randInt(colours.length)] should always be a valid string.
+  // Add ?? '#ffffff' for robustness, especially if noUncheckedIndexedAccess is on.
+  return colours[randInt(colours.length)] ?? '#ffffff';
+};
 
 export default class BubbleManager {
   private bubbles: Bubble[] = [];
