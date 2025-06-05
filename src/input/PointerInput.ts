@@ -13,12 +13,10 @@ export default class PointerInput {
 
   attach() {
     this.canvas.addEventListener('pointerdown', this.bound);
-    this.canvas.addEventListener('touchstart', this.bound);
   }
 
   detach() {
     this.canvas.removeEventListener('pointerdown', this.bound);
-    this.canvas.removeEventListener('touchstart', this.bound);
   }
 
   // ────────────────────────────────────────────────────────────
