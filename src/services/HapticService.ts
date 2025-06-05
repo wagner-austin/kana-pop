@@ -22,6 +22,11 @@ export class HapticService {
     this.isIOS =
       /iPad|iPhone|iPod/.test(navigator.userAgent) ||
       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      
+    const isAndroidChrome = /Android/.test(navigator.userAgent) && /Chrome/.test(navigator.userAgent);
+    if (isAndroidChrome) {
+      log.info('Android Chrome detected - using optimized haptic patterns');
+    }
 
     /* Honour "prefers-reduced-motion: reduce" early. */
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -53,10 +58,21 @@ export class HapticService {
             navigator.vibrate(100);
             this.updateDebugStatus('iOS vibration activated');
           } else {
-            // Android works better with properly formed even-length patterns
-            // Using [0, 100] ensures the pattern starts with a pause (0ms) then vibrates
-            navigator.vibrate([0, 100]);
-            this.updateDebugStatus('Android vibration activated');
+            // Android Chrome requires a direct vibration without starting with 0ms
+            // Try direct pattern first, then fall back to simpler approach if needed
+            try {
+              navigator.vibrate(100);
+              this.updateDebugStatus('Android vibration activated (simple)');
+            } catch (e) {
+              // Fall back to alternative pattern if direct vibration fails
+              try {
+                navigator.vibrate([100, 50, 100]);
+                this.updateDebugStatus('Android vibration activated (pattern)');
+              } catch (e2) {
+                log.warn('Vibration activation failed:', e2);
+                this.updateDebugStatus('Activation failed');
+              }
+            }
           }
 
           // Special handling of lastVibration for initialization:
@@ -93,9 +109,11 @@ export class HapticService {
   vibrate(pattern: number | number[] = 50, intensity: 1 | 2 | 3 = 2): boolean {
     if (!this.enabled) return false;
 
-    // Add throttle to prevent frequent vibrations (using 300ms for safer gap)
+    // Less restrictive throttle for Android to ensure initial vibrations work
+    // This helps when the first vibration might be blocked
     const now = Date.now();
-    if (now - this.lastVibration < 300) return false;
+    const minGap = this.isIOS ? 300 : 150; // Shorter throttle for Android
+    if (now - this.lastVibration < minGap) return false;
 
     try {
       let actual: number | number[] = pattern;
@@ -110,16 +128,19 @@ export class HapticService {
           // iOS works better with a single longer vibration
           actual = intensity === 3 ? p * 2 : p * 1.5;
         } else {
-          // Android works better with even-length pattern arrays
+          // Android Chrome works better with simple patterns
+          // Recent Chrome versions may ignore complex patterns
           switch (intensity) {
             case 1: // Subtle
               actual = p;
               break;
             case 2: // Medium
-              actual = [p, gap, p];
+              // Use a single longer vibration for better compatibility
+              actual = Math.min(p * 1.5, 150); // Cap at 150ms for better compatibility
               break;
             case 3: // Strong
-              actual = [p, gap, p, gap, p];
+              // Try a simpler pattern that's more likely to work
+              actual = [p, gap, p];
               break;
           }
         }
