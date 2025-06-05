@@ -16,14 +16,13 @@ Kana Pop is designed to run in multiple environments (browser, tests, CI) which 
 
 Never use raw Web Storage APIs (`localStorage`, `sessionStorage`) directly in your code. Always use these service abstractions to ensure code works consistently across all environments.
 
-
 ## Gameplay Features
 
 ### Bubble Interaction
 
 - **Tap Feedback**: When a bubble is tapped, it provides visual and haptic feedback:
-    - **Visual**: The bubble quickly shrinks to 85% of its size (`BUBBLE_TAP_SCALE = 0.85`) and then smoothly animates back to its original scale. It also flashes a white rim.
-    - **Haptic**: If supported by the browser and not disabled by user preference (`prefers-reduced-motion`), a subtle vibration occurs (`HAPTIC_DURATION_MS`).
+  - **Visual**: The bubble quickly shrinks to 85% of its size (`BUBBLE_TAP_SCALE = 0.85`) and then smoothly animates back to its original scale. It also flashes a white rim.
+  - **Haptic**: If supported by the browser and not disabled by user preference (`prefers-reduced-motion`), a subtle vibration occurs (`HAPTIC_DURATION_MS`).
 
 ## Testing
 
