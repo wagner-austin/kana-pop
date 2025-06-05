@@ -22,13 +22,15 @@ export default class BackgroundRenderer {
   private activeProviderFailed = false; // Flag to indicate if primary (Gyro) failed
 
   /* parallax state */
-  private offset: MotionSample = { x: 0, y: 0 };
+  private rawOffset: MotionSample = { x: 0, y: 0 }; // Raw input from motion provider
+  private offset: MotionSample = { x: 0, y: 0 }; // Lerped/smoothed offset for rendering
+  private readonly LERP_FACTOR = 0.08; // Controls smoothing (0-1): lower = smoother but more lag
 
   /** Public read-only access so other renderers can reuse the same offset. */
   getOffset(): MotionSample {
     return this.offset;
   }
-  private readonly MAX_SHIFT = 50; // css-px at full tilt - increased for more noticeable effect
+  private readonly MAX_SHIFT = 80; // css-px at full tilt - increased for more noticeable background movement
   private debugElement: HTMLElement | null = null;
 
   constructor() {
@@ -67,7 +69,8 @@ export default class BackgroundRenderer {
   private async startMotionTracking(): Promise<void> {
     const initialProvider = this.motionProvider;
     try {
-      await initialProvider.start((v) => (this.offset = v));
+      // Store raw values from motion provider, but don't directly use them for rendering
+      await initialProvider.start((v) => (this.rawOffset = v));
 
       if (initialProvider instanceof GyroProvider) {
         if (initialProvider.isActive()) {
@@ -106,8 +109,9 @@ export default class BackgroundRenderer {
   }
 
   update(_dt: number): void {
-    // No time-based updates needed here for the offset itself;
-    // it's updated directly by the motion provider's callback.
+    // Apply lerping to smooth out the motion
+    this.offset.x = this.offset.x + (this.rawOffset.x - this.offset.x) * this.LERP_FACTOR;
+    this.offset.y = this.offset.y + (this.rawOffset.y - this.offset.y) * this.LERP_FACTOR;
 
     // Update debug information display
     if (this.debugElement) {

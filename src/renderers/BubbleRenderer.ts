@@ -10,21 +10,20 @@ import {
 import type Bubble from '@/entities/Bubble';
 
 export default class BubbleRenderer {
-  /** parallax = motion offset in –1..1 — pass null for none (tests). */
+  /** 
+   * We still accept parallax parameter for API consistency, but bubbles now stay in place
+   * while the background moves for the parallax effect.
+   */
   render(
     ctx: CanvasRenderingContext2D,
     b: Bubble,
     w: number,
     h: number,
-    parallax?: { x: number; y: number },
+    _parallax?: { x: number; y: number }, // Unused but kept for API consistency
   ): void {
-    const PARALLAX_STRENGTH = 20; // css-px max bubble shift (≈⅓ of stars)
-    // Bubbles move *opposite* the background so the effect is obvious.
-    const shiftX = (parallax?.x ?? 0) * -PARALLAX_STRENGTH;
-    const shiftY = (parallax?.y ?? 0) * -PARALLAX_STRENGTH;
-
-    const pxX = b.x * w + shiftX;
-    const pxY = b.y * h + shiftY;
+    // No parallax shifting applied to bubbles - they stay in place
+    const pxX = b.x * w;
+    const pxY = b.y * h;
     const r = b.r * b.scale; // ← squash / stretch
 
     // circle
