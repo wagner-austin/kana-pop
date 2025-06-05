@@ -1,5 +1,6 @@
 import type { IBackgroundEffect } from '@/effects/IBackgroundEffect';
 import { ImageEffect } from '@/effects/ImageEffect';
+import { CssEffect } from '@/effects/CssEffect';
 import { VideoEffect } from '@/effects/VideoEffect';
 import { ShaderEffect } from '@/effects/ShaderEffect';
 import { setThemePalette } from '@/config/constants';
@@ -24,7 +25,8 @@ type EffectCfg =
   | { type: 'image'; file: string }
   | { type: 'video'; file: string }
   | { type: 'script'; file: string; export: string }
-  | { type: 'shader'; shader: string };
+  | { type: 'shader'; shader: string }
+  | { type: 'css'; class: string };
 
 interface Manifest {
   name: string;
@@ -143,6 +145,8 @@ class ThemeService {
     } else if (cfg.type === 'shader') {
       // Shaders are defined directly in theme.json, not as files
       return new ShaderEffect(cfg.shader);
+    } else if (cfg.type === 'css') {
+      return new CssEffect(cfg.class);
     } else {
       // This will cause a TypeScript error if any cfg.type is not handled,
       // ensuring all types in EffectCfg are covered.

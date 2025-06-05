@@ -1,6 +1,5 @@
 import BubbleManager from '../managers/BubbleManager';
 import PointerInput from '../input/PointerInput';
-import BackgroundRenderer from '../renderers/BackgroundRenderer';
 import BubbleRenderer from '../renderers/BubbleRenderer';
 import Logger from '../utils/Logger';
 import { cssSize, applyDprTransform } from '../utils/canvasMetrics';
@@ -19,25 +18,18 @@ let frames = 0;
 export default function makePlay(ctx: CanvasRenderingContext2D) {
   const bubbles = new BubbleManager(ctx.canvas);
   const bubbleRenderer = new BubbleRenderer();
-  const backgroundRenderer = new BackgroundRenderer();
 
   let ready = false;
 
   const handleResize = () => bubbles.handleResize();
   const input = new PointerInput(ctx.canvas, bubbles);
 
-  // Named resize handler for the background renderer to allow unsubscribing
-  const bgResizeHandler = () => {
-    if (!ResizeService) return; // Guard against ResizeService being undefined if called too early/late
-    const { cssWidth: w, cssHeight: h, dpr } = ResizeService;
-    if (backgroundRenderer) backgroundRenderer.handleResize(w, h, dpr);
-  };
-
   return {
     update(dt: number) {
       if (!ready) return; // skip the frame until we’re loaded
-      applyDprTransform(ctx);
       const { w: cssW, h: cssH } = cssSize(ctx.canvas);
+      ctx.clearRect(0, 0, cssW, cssH);
+      applyDprTransform(ctx);
       const rawDt = dt; // keep the real frame time for diagnostics
       dt = Math.min(rawDt, 0.1); // physics clamp
 
@@ -55,14 +47,10 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
 
       bubbles.update(dt);
 
-      backgroundRenderer.update(dt);
-
-      backgroundRenderer.draw(dt, ctx);
-
-      const parallax = backgroundRenderer.getOffset();
-      bubbles.entities.forEach((b) => bubbleRenderer.render(ctx, b, cssW, cssH, parallax));
+      bubbles.entities.forEach((b) => bubbleRenderer.render(ctx, b, cssW, cssH));
     },
     async enter() {
+      document.body.dataset.scene = 'play';
       log.info('Play screen entered');
 
       /* ① theme ---------------------------------------- */
@@ -81,19 +69,19 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
 
       ready = true; // start the game immediately
       ResizeService.subscribe(handleResize);
-      ResizeService.subscribe(bgResizeHandler);
+      /* background handled globally – no resize hook needed here */
       // Call handleResize once initially to set correct scaling if canvas size differs from prevW/prevH defaults
       handleResize();
       input.attach();
     },
     exit() {
+      delete document.body.dataset.scene;
       log.info('Play screen exited');
       ResizeService.unsubscribe(handleResize);
-      ResizeService.unsubscribe(bgResizeHandler); // Unsubscribe background resize handler
       input.detach();
       bubbles.clear();
       /* stop gyro / fallback RAF to avoid leaks */
-      backgroundRenderer.dispose();
+      /* no backgroundRenderer anymore */
     },
   };
 }

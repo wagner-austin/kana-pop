@@ -34,19 +34,8 @@ export class ImageEffect implements IBackgroundEffect {
     if (!this.ready || !this.img || !this.img.complete || this.img.naturalWidth === 0) {
       return false;
     }
-    const canvasWidth = ctx.canvas.width;
-    const canvasHeight = ctx.canvas.height;
-    const imgWidth = this.img.naturalWidth;
-    const imgHeight = this.img.naturalHeight;
-
-    const scale = Math.max(canvasWidth / imgWidth, canvasHeight / imgHeight);
-    const scaledImgWidth = imgWidth * scale;
-    const scaledImgHeight = imgHeight * scale;
-
-    const x = (canvasWidth - scaledImgWidth) / 2;
-    const y = (canvasHeight - scaledImgHeight) / 2;
-
-    ctx.drawImage(this.img, x, y, scaledImgWidth, scaledImgHeight);
+    /* Paint at native resolution, anchored top-left – no scaling */
+    ctx.drawImage(this.img, 0, 0);
     return true;
   }
 }

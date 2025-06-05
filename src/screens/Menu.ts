@@ -1,5 +1,5 @@
 import type StateMachine from '../core/StateMachine';
-import { backgroundColour, TEXT_COLOUR_DARK } from '../config/constants';
+import { TEXT_COLOUR_DARK } from '../config/constants';
 import ResizeService from '../services/ResizeService';
 import { applyDprTransform, cssSize } from '../utils/canvasMetrics';
 
@@ -15,10 +15,9 @@ export default function makeMenu(sm: StateMachine, ctx: CanvasRenderingContext2D
   }
 
   function paint() {
-    applyDprTransform(ctx); // Ensure transform is active for every paint
     const { w: width, h: height } = cssSize(ctx.canvas);
-    ctx.fillStyle = backgroundColour();
-    ctx.fillRect(0, 0, width, height);
+    ctx.clearRect(0, 0, width, height);
+    applyDprTransform(ctx); // re-apply DPR scaling
 
     ctx.fillStyle = TEXT_COLOUR_DARK; // dark text
     ctx.textAlign = 'center';
@@ -31,6 +30,7 @@ export default function makeMenu(sm: StateMachine, ctx: CanvasRenderingContext2D
 
   return {
     enter() {
+      document.body.dataset.scene = 'menu';
       ResizeService.subscribe(paint);
       ctx.canvas.addEventListener('pointerdown', click);
     },
@@ -38,6 +38,7 @@ export default function makeMenu(sm: StateMachine, ctx: CanvasRenderingContext2D
       paint();
     },
     exit() {
+      delete document.body.dataset.scene;
       ResizeService.unsubscribe(paint);
       ctx.canvas.removeEventListener('pointerdown', click);
     },

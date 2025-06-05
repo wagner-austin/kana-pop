@@ -2,6 +2,7 @@
    Universal viewport lock – no scrolling,
    no rubber-band, full-bleed canvas.
 ----------------------------------------------*/
+@import './backgrounds.css';
 html,
 body {
   height: 100%;
@@ -21,4 +22,16 @@ body {
   height: 100dvh;
   height: var(--app-height);
   display: block;
+}
+
+/* Background layer requires the exact same sizing rules
+   but doesn’t need pointer interaction. */
+canvas#bg {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100dvh;
+  height: var(--app-height);
+  display: block;
+  pointer-events: none; /* never steals taps/clicks */
 }

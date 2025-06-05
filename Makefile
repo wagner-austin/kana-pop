@@ -86,7 +86,7 @@ test-coverage:
 # Save code utility
 savecode:
 	@echo "💾 Running savecode utility..."
-	savecode . --skip test docs .\.vscode\ .\node_modules\ --ext ts html yml webmanifest css json
+	savecode . --skip test docs .\.vscode\ .\node_modules\ --ext ts html yml webmanifest css
 	@echo "✅ Code saved (skipped test dir)."
 
 # Save code utility (including test directory)

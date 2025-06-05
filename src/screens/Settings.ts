@@ -6,6 +6,8 @@ export default function makeSettings(sm: StateMachine, ctx: CanvasRenderingConte
 
   function draw() {
     const { w, h } = cssSize(ctx.canvas);
+    ctx.clearRect(0, 0, w, h);
+    /* translucent overlay – background still visible beneath */
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
     ctx.fillRect(0, 0, w, h);
 
@@ -18,13 +20,15 @@ export default function makeSettings(sm: StateMachine, ctx: CanvasRenderingConte
   }
 
   return {
-    enter() {
+    enter: () => {
+      document.body.dataset.scene = 'settings';
       ctx.canvas.addEventListener('pointerdown', close);
     },
     update() {
       draw();
     },
-    exit() {
+    exit: () => {
+      delete document.body.dataset.scene;
       ctx.canvas.removeEventListener('pointerdown', close);
     },
   };

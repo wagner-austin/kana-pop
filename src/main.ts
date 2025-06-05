@@ -1,4 +1,5 @@
 import ResizeService from './services/ResizeService';
+import BackgroundManager from './core/BackgroundManager';
 import StateMachine from './core/StateMachine';
 import makeMenu from './screens/Menu';
 import makePlay from './screens/Play';
@@ -7,6 +8,12 @@ import makeLoading from './screens/Loading';
 import Sound from './services/SoundService';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#game');
+
+/* -------- background layer (one per app) -------------------------- */
+const bgCanvas = document.createElement('canvas');
+bgCanvas.id = 'bg';
+document.body.prepend(bgCanvas);
+const bg = new BackgroundManager(bgCanvas);
 if (!canvas) throw new Error('#game canvas not found');
 const ctx = canvas.getContext('2d');
 if (!ctx) throw new Error('2-D context not available');
@@ -40,7 +47,8 @@ let last = performance.now();
 function loop(now: number) {
   const dt = (now - last) / 1000;
   last = now;
-  sm.update(dt);
+  bg.paint(dt); // ① draw background first
+  sm.update(dt); // ② active scene paints on #game canvas(loop);
   raf = requestAnimationFrame(loop);
 }
 raf = requestAnimationFrame(loop);

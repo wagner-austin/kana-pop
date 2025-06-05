@@ -1,0 +1,6 @@
+/* Default fallback (when ThemeService didn’t draw) */
+canvas#bg {
+  background: var(--bg-colour, #c7ceea);
+}
+
+/* No scene-specific effects – one consistent background everywhere */

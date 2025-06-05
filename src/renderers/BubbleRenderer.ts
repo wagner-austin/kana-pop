@@ -19,7 +19,7 @@ export default class BubbleRenderer {
     b: Bubble,
     w: number,
     h: number,
-    _parallax?: { x: number; y: number }, // Unused but kept for API consistency
+    _waste?: unknown, // Unused but kept for API consistency
   ): void {
     // No parallax shifting applied to bubbles - they stay in place
     const pxX = b.x * w;
