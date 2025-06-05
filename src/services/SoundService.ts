@@ -18,11 +18,17 @@ class SoundService {
     this.isGestureArmed = true;
     console.warn('SoundService: First gesture armed.');
 
-    // Check if this is an iOS device
+    // More comprehensive device detection
+    const ua = navigator.userAgent;
     const isIOS =
-      /iPad|iPhone|iPod/.test(navigator.userAgent) &&
-      !(window as unknown as { MSStream: unknown }).MSStream;
-    console.warn(`Device detected as ${isIOS ? 'iOS' : 'non-iOS'}`);
+      /iPad|iPhone|iPod/.test(ua) && !(window as unknown as { MSStream: unknown }).MSStream;
+    const isSafari = /Safari/.test(ua) && !/Chrome/.test(ua);
+    const isIPadOS =
+      /iPad/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    console.warn(
+      `Device detected: ${isIOS ? 'iOS' : isIPadOS ? 'iPadOS' : 'other'}, Browser: ${isSafari ? 'Safari' : 'other'}`,
+    );
 
     const handler = () => {
       console.warn('User interaction detected, attempting to unlock audio...');
@@ -31,53 +37,120 @@ class SoundService {
       // This is a common workaround for browsers that require user interaction for audio.
       const a = new Audio(SoundService.SILENT);
 
-      // For iOS, we need to set the playback rate explicitly and play inline
-      if (isIOS) {
+      // For iOS/iPadOS, we need to set the playback rate explicitly and play inline
+      if (isIOS || isIPadOS) {
         a.setAttribute('playsinline', '');
+        a.setAttribute('autoplay', '');
         a.muted = true;
         a.playbackRate = 1.0;
+
+        // Additional attributes particularly helpful for Safari
+        if (isSafari) {
+          a.controls = false;
+          a.preload = 'auto';
+        }
       }
 
-      a.play()
-        .then(() => {
-          console.warn('Silent audio played successfully');
-        })
-        .catch((err) => {
-          // Log if silent audio play fails, though it's often a non-critical issue.
-          console.warn('Silent audio playback for arming gesture failed:', err);
-        })
-        .finally(async () => {
-          // 🔑 Make sure the AudioContext is resumed *inside* the gesture
+      // Play silent audio with comprehensive error handling
+      const playPromise = a.play();
+
+      // If play() doesn't return a promise (older Safari versions),
+      // we need to handle it differently
+      if (playPromise instanceof Promise) {
+        playPromise
+          .then(() => {
+            console.warn('Silent audio played successfully');
+          })
+          .catch((err) => {
+            // Log if silent audio play fails, though it's often a non-critical issue.
+            console.warn('Silent audio playback for arming gesture failed:', err);
+
+            // For iPad Safari, try an alternative approach if the first fails
+            if (isIPadOS && isSafari) {
+              console.warn('iPad Safari detected, trying alternative audio unlock...');
+              try {
+                // Create and play a new audio element with different settings
+                const backup = new Audio();
+                backup.src = SoundService.SILENT;
+                backup.setAttribute('playsinline', '');
+                backup.muted = true;
+                backup.play().catch((e) => console.warn('Alternative unlock also failed:', e));
+              } catch (e) {
+                console.warn('Alternative audio unlock approach failed:', e);
+              }
+            }
+          })
+          .finally(async () => {
+            // 🔑 Make sure the AudioContext is resumed *inside* the gesture
+            try {
+              await this.bank.resume();
+              console.warn('AudioContext resumed successfully in gesture handler');
+              this.triggerReady();
+            } catch (err) {
+              console.error('Failed to resume audio context:', err);
+            }
+          });
+      } else {
+        console.warn('Browser returned no promise from play() - older Safari?');
+        // Assume it worked, continue with resume
+        // Handle non-promise case manually
+        (async () => {
           try {
             await this.bank.resume();
-            console.warn('AudioContext resumed successfully in gesture handler');
+            console.warn('AudioContext resumed successfully in gesture handler (non-promise path)');
             this.triggerReady();
           } catch (err) {
-            console.error('Failed to resume audio context:', err);
+            console.error('Failed to resume audio context (non-promise path):', err);
           }
-        });
+        })();
+      }
     };
 
-    // For iOS, we need additional events and multiple attempts
-    if (isIOS) {
-      // iOS particularly needs touchend events
-      const iosEvents = ['touchend', 'touchstart', 'pointerup', 'pointerdown', 'click'];
-      iosEvents.forEach((type) => {
+    // For iOS/iPadOS, we need additional events and multiple attempts
+    if (isIOS || isIPadOS) {
+      // iOS/iPadOS need comprehensive event coverage
+      const mobileEvents = ['touchend', 'touchstart', 'pointerup', 'pointerdown', 'click'];
+
+      // Add all events with individual handlers for better reliability
+      mobileEvents.forEach((type) => {
         el.addEventListener(type, handler, { once: true, passive: true });
       });
 
-      // Add a backup handler that runs after a delay (helps on some iOS versions)
-      setTimeout(() => {
-        if (!this.triggerReady) return; // Already resolved
-        console.warn('Adding backup iOS audio unlock handler');
-        const backupHandler = async () => {
-          await this.bank.resume();
-          this.triggerReady();
-        };
-        document.body.addEventListener('touchend', backupHandler, { once: true });
-      }, 1000);
+      // Special handling for iPad Safari
+      if (isIPadOS && isSafari) {
+        console.warn('iPadOS Safari detected, applying special handling');
+        // Add extra events specific to iPad Safari
+        ['mousedown', 'keydown'].forEach((type) => {
+          el.addEventListener(type, handler, { once: true, passive: true });
+        });
+
+        // Also add handlers to document and body for iPad Safari
+        document.addEventListener('touchend', handler, { once: true, passive: true });
+        document.body.addEventListener('touchstart', handler, { once: true, passive: true });
+      }
+
+      // Add multiple backup handlers with different delays
+      const delays = isIPadOS && isSafari ? [500, 1000, 2000] : [1000];
+      delays.forEach((delay) => {
+        setTimeout(() => {
+          if (!this.triggerReady) return; // Already resolved
+          console.warn(`Adding backup audio unlock handler (delay: ${delay}ms)`);
+          const backupHandler = async () => {
+            try {
+              await this.bank.resume();
+              this.triggerReady();
+            } catch (err) {
+              console.error('Backup handler failed:', err);
+            }
+          };
+          document.body.addEventListener('touchend', backupHandler, { once: true });
+          if (isIPadOS && isSafari) {
+            document.addEventListener('click', backupHandler, { once: true });
+          }
+        }, delay);
+      });
     } else {
-      // For non-iOS, regular events are sufficient
+      // For non-iOS/iPadOS, regular events are sufficient
       ['pointerdown', 'touchstart', 'mousedown', 'keydown'].forEach((type) =>
         el.addEventListener(type, handler, { once: true, passive: true }),
       );
