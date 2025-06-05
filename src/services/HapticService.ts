@@ -11,6 +11,8 @@ export class HapticService {
   private debugElement: HTMLElement | null = null;
   private lastVibration = 0;
   private isIOS = false;
+  /** null = unknown; true = navigator.vibrate() accepted an array; false = array was rejected */
+  private patternArraysOkay: boolean | null = null;
 
   constructor() {
     /* Skip initialization in SSR environments */
@@ -18,14 +20,14 @@ export class HapticService {
       return;
     }
 
-    // Detect iOS devices
+    // Detect iOS / iPadOS – spec: Vibration API is unsupported
     this.isIOS =
       /iPad|iPhone|iPod/.test(navigator.userAgent) ||
       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-      
-    const isAndroidChrome = /Android/.test(navigator.userAgent) && /Chrome/.test(navigator.userAgent);
-    if (isAndroidChrome) {
-      log.info('Android Chrome detected - using optimized haptic patterns');
+
+    if (this.isIOS) {
+      log.info('iOS detected – Vibration API unsupported; Haptics disabled.');
+      return; // Leave .enabled = false
     }
 
     /* Honour "prefers-reduced-motion: reduce" early. */
@@ -63,7 +65,7 @@ export class HapticService {
             try {
               navigator.vibrate(100);
               this.updateDebugStatus('Android vibration activated (simple)');
-            } catch (e) {
+            } catch {
               // Fall back to alternative pattern if direct vibration fails
               try {
                 navigator.vibrate([100, 50, 100]);
@@ -109,16 +111,28 @@ export class HapticService {
   vibrate(pattern: number | number[] = 50, intensity: 1 | 2 | 3 = 2): boolean {
     if (!this.enabled) return false;
 
+    /* ── 1. Probe once per page-load ──────────────────────────────── */
+    if (this.patternArraysOkay === null) {
+      // Use a 2-element array; engines that only support single pulses will reject it.
+      this.patternArraysOkay = navigator.vibrate([1, 1]);
+      // The probe itself consumes the first user-activation: bail out early.
+      if (!this.patternArraysOkay) {
+        this.updateDebugStatus('Array patterns rejected – collapsing to single pulses');
+        return false;
+      }
+      // If we get here the array was accepted; continue into normal haptics.
+    }
+
     // Less restrictive throttle for Android to ensure initial vibrations work
     // This helps when the first vibration might be blocked
     const now = Date.now();
-    const minGap = this.isIOS ? 300 : 150; // Shorter throttle for Android
+    const minGap = 200; // Enough to feel discrete taps, platform-agnostic
     if (now - this.lastVibration < minGap) return false;
 
     try {
       let actual: number | number[] = pattern;
 
-      // Keep patterns; only build them when caller gives a single number
+      // Convert single-number request into a pattern/intensity pulse
       if (!Array.isArray(pattern)) {
         // Enforce minimum duration of 50ms for better hardware compatibility
         const p = Math.max(pattern, 50);
@@ -139,21 +153,23 @@ export class HapticService {
               actual = Math.min(p * 1.5, 150); // Cap at 150ms for better compatibility
               break;
             case 3: // Strong
-              // Try a simpler pattern that's more likely to work
-              actual = [p, gap, p];
+              // Strong = two pulses unless arrays are disallowed
+              actual = this.patternArraysOkay ? [p, gap, p] : p * 2;
               break;
           }
         }
       }
 
-      // Call the native API and check for success
-      const ok = navigator.vibrate(actual);
-      if (ok) {
-        this.lastVibration = now;
-        this.updateDebugStatus(`Vibrated: ${JSON.stringify(actual)}`);
-      } else {
-        this.updateDebugStatus('Vibration rejected (blocked by browser)');
+      // If the browser rejected arrays during the probe, collapse any we built
+      if (!this.patternArraysOkay && Array.isArray(actual)) {
+        actual = Math.max(...actual);
       }
+
+      const ok = navigator.vibrate(actual);
+      this.updateDebugStatus(
+        ok ? `Vibrated: ${JSON.stringify(actual)}` : 'navigator.vibrate() returned false',
+      );
+      if (ok) this.lastVibration = now;
       return ok;
     } catch (e) {
       console.warn('Vibration failed:', e);
