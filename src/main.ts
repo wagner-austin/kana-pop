@@ -4,20 +4,22 @@ import makeMenu from './screens/Menu';
 import makePlay from './screens/Play';
 import Sound from './services/SoundService';
 
-const canvas = document.querySelector<HTMLCanvasElement>('#game')!;
+const canvas = document.querySelector<HTMLCanvasElement>('#game');
+if (!canvas) throw new Error('#game canvas not found');
+const ctx = canvas.getContext('2d');
+if (!ctx) throw new Error('2-D context not available');
 
-/** ------------------------------------------------------------------
- *  Dynamically set --app-height to the “true” viewport height so that
- *  CSS can use `height: var(--app-height)` as a guaranteed lock.
- *  Needed for iOS <= 14 where `100vh` and `100dvh` are both wrong.
+/* ------------------------------------------------------------------
+ *  Polyfill: keep CSS var --app-height equal to window.innerHeight.
+ *  Needed for older mobile browsers that mis-report 100vh.
  * -----------------------------------------------------------------*/
 function setAppHeight() {
   document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
 }
-setAppHeight();
-window.addEventListener('orientationchange', setAppHeight);
-window.addEventListener('resize', setAppHeight);
-const ctx = canvas.getContext('2d')!;
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', setAppHeight, { once: true });
+} else setAppHeight();
+window.addEventListener('resize', setAppHeight); // orientationchange → resize
 
 // Attach immediately, so the *very first* tap counts
 Sound.armFirstGesture(window);
@@ -27,11 +29,21 @@ const sm = new StateMachine();
 sm.add('menu', makeMenu(sm, ctx)).add('play', makePlay(ctx));
 sm.change('menu');
 
+let raf = 0;
 let last = performance.now();
 function loop(now: number) {
   const dt = (now - last) / 1000;
   last = now;
   sm.update(dt);
-  requestAnimationFrame(loop);
+  raf = requestAnimationFrame(loop);
 }
-requestAnimationFrame(loop);
+raf = requestAnimationFrame(loop);
+
+// Suspend when page is hidden (saves battery on iOS)
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) cancelAnimationFrame(raf);
+  else {
+    last = performance.now();
+    raf = requestAnimationFrame(loop);
+  }
+});
