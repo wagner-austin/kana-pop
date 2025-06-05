@@ -1,46 +1,66 @@
-type AudioContextCtor = typeof AudioContext | undefined;
-
-/** Global object with optional Web-Audio constructors – typed, no `any` */
-const globalAudio = globalThis as typeof globalThis & {
-  AudioContext?: typeof AudioContext;
-  webkitAudioContext?: typeof AudioContext;
-};
-
-/** Pick whichever constructor the runtime provides (undefined in Node/Vitest) */
-const AudioContextClass: AudioContextCtor =
-  globalAudio.AudioContext ?? globalAudio.webkitAudioContext;
-
 export default class AudioBufferBank {
-  /** Absent in unit-test envs, present in every real browser. */
-  private ctx: AudioContext | undefined = AudioContextClass ? new AudioContextClass() : undefined;
-
+  private ctx?: AudioContext;
   private bank = new Map<string, AudioBuffer>();
 
-  async fetch(url: string): Promise<AudioBuffer> {
-    if (!this.ctx) throw new Error('AudioContext not available in this environment');
-
-    if (this.bank.has(url)) return this.bank.get(url)!;
-
-    const data = await (await fetch(url)).arrayBuffer();
-    const buf = await new Promise<AudioBuffer>((res, rej) =>
-      // Safari still needs the callback form for raw ArrayBuffers
-      this.ctx!.decodeAudioData(data, res, rej),
-    );
-
-    this.bank.set(url, buf);
-    return buf;
+  /** make sure ctx exists *and* is running */
+  private async context(): Promise<AudioContext> {
+    if (!this.ctx) {
+      /* Pick the available constructor *now*, inside the gesture */
+      const globalAudio = globalThis as typeof globalThis & {
+        AudioContext?: typeof AudioContext;
+        webkitAudioContext?: typeof AudioContext;
+      };
+      const Ctor = globalAudio.AudioContext ?? globalAudio.webkitAudioContext;
+      if (!Ctor) throw new Error('Web Audio API not supported');
+      this.ctx = new Ctor();
+      // helpful while debugging
+      this.ctx.onstatechange = () => console.warn('[Audio] state →', this.ctx!.state);
+    }
+    // On some Safari versions, the context might be 'interrupted' instead of 'suspended'
+    if (this.ctx.state !== 'running') {
+      try {
+        await this.ctx.resume(); // successfully resumed
+      } catch (err) {
+        console.error('Error resuming AudioContext:', err);
+        // Rethrow or handle as appropriate for your app's error strategy
+        throw err;
+      }
+    }
+    // You can expose this.ctx for manual inspection during development by
+    // attaching it to a typed global in a local-only debug helper instead of
+    // polluting production builds.
+    return this.ctx;
   }
 
-  play(buf: AudioBuffer): void {
-    if (!this.ctx) return; // no-op during tests
-    const src = this.ctx.createBufferSource();
+  async fetch(url: string): Promise<AudioBuffer> {
+    if (this.bank.has(url)) return this.bank.get(url)!;
+
+    /* attempt to fetch & decode */
+
+    const data = await (await fetch(url)).arrayBuffer();
+    const ctx = await this.context(); // ⬅️ running for sure
+
+    try {
+      const buf = await ctx.decodeAudioData(data);
+      this.bank.set(url, buf);
+      return buf;
+    } catch (error) {
+      console.error(`AudioBufferBank: decodeAudioData failed for ${url}`, error);
+      // Propagate the error so SoundService can potentially use a fallback
+      throw error;
+    }
+  }
+
+  async play(buf: AudioBuffer) {
+    const ctx = await this.context();
+    const src = ctx.createBufferSource();
     src.buffer = buf;
-    src.connect(this.ctx.destination);
+    src.connect(ctx.destination);
     src.start();
   }
 
   /** Call from your unlock-gesture to satisfy iOS */
-  resume(): Promise<void> {
-    return this.ctx ? this.ctx.resume() : Promise.resolve();
+  async resume() {
+    await this.context(); // lazily create + resume
   }
 }

@@ -5,28 +5,37 @@ class SoundService {
   private bank = new AudioBufferBank();
   private ready!: Promise<void>;
   private triggerReady!: () => void;
-  private armed = false; // prevents double-registration
-  private static SILENT = 'data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAA==';
+  private isGestureArmed = false; // prevents double-registration
+  private static SILENT =
+    'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAIlYAACJWAAABAAgAZGF0YQAAAAA=';
 
   constructor() {
     this.ready = new Promise<void>((res) => (this.triggerReady = res));
   }
 
-  armFirstGesture(el: EventTarget = window) {
-    if (this.armed) return;
-    this.armed = true;
+  public async armFirstGesture(el: EventTarget = window): Promise<void> {
+    if (this.isGestureArmed) return;
+    this.isGestureArmed = true;
+    // console.log('SoundService: First gesture armed.'); // Kept simpler log commented out for brevity
 
     const handler = () => {
+      // Play a silent sound to ensure the audio context is "unlocked".
+      // This is a common workaround for browsers that require user interaction for audio.
       const a = new Audio(SoundService.SILENT);
       a.play()
-        .catch(() => {})
-        .finally(() => {
-          this.bank.resume(); // <— wake Web Audio while we’re in-gesture
+        .catch((err) => {
+          // Log if silent audio play fails, though it's often a non-critical issue.
+          console.warn('Silent audio playback for arming gesture failed:', err);
+        })
+        .finally(async () => {
+          // 🔑 Make sure the AudioContext is resumed *inside* the gesture
+          await this.bank.resume();
           this.triggerReady();
         });
     };
 
-    // One of these will fire on every modern browser
+    // Attach the handler to the first user interaction event.
+    // Using 'pointerdown' as a primary, with fallbacks for broader compatibility.
     ['pointerdown', 'touchstart', 'mousedown', 'keydown'].forEach((type) =>
       el.addEventListener(type, handler, { once: true, passive: true }),
     );
@@ -44,9 +53,20 @@ class SoundService {
     const url = withHash(`${import.meta.env.BASE_URL}audio/${path}`);
     try {
       const buff = await this.bank.fetch(url);
-      this.bank.play(buff);
-    } catch {
-      // Silent failure is fine (e.g. audio disabled in unit tests)
+      await this.bank.play(buff); // Ensure bank.play is awaited as it's async
+    } catch (e) {
+      console.warn(
+        `SoundService: Web Audio playback failed for ${url}, falling back to HTMLAudioElement. Error:`,
+        e,
+      );
+      // Web-Audio failed – fall back to a short <audio> element
+      new Audio(url).play().catch((htmlAudioError) => {
+        // It's possible the HTMLAudioElement also fails (e.g. network error, unsupported format for <audio>)
+        console.error(
+          `SoundService: HTMLAudioElement fallback also failed for ${url}:`,
+          htmlAudioError,
+        );
+      });
     }
   }
 
