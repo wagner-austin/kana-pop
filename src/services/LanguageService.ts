@@ -1,6 +1,10 @@
 import { LanguageDef, SymbolDef } from '@/types/language';
 // Import the manifest directly. This provides metadata for all available languages.
 import languageManifestFile from '../data/lang/index.json' assert { type: 'json' };
+import StorageService from '@/utils/StorageService';
+import Logger from '@/utils/Logger';
+
+const log = new Logger('Lang');
 
 // Define a type for the entries within 'index.json' to ensure type safety.
 interface LanguageManifestEntry {
@@ -22,7 +26,7 @@ class LanguageService {
   public readonly defaultCode: string;
 
   constructor() {
-    const savedLang = localStorage.getItem('kanaPop.lang');
+    const savedLang = StorageService.get('kanaPop.lang');
     const browserLang = navigator.language?.slice(0, 2); // Get primary language subtag (e.g., 'en' from 'en-US')
     this.defaultCode = savedLang || browserLang || 'ja'; // Determine default language code.
 
@@ -32,16 +36,16 @@ class LanguageService {
     let initialManifestEntry = languageManifest.find((l) => l.code === this.defaultCode);
 
     if (!initialManifestEntry) {
-      console.warn(
-        `LanguageService: Default code '${this.defaultCode}' not in manifest. Falling back to first manifest entry or 'ja'.`,
+      log.warn(
+        `Default code '${this.defaultCode}' not in manifest. Falling back to first manifest entry or 'ja'.`,
       );
       initialManifestEntry = languageManifest.find((l) => l.code === 'ja') || languageManifest[0];
     }
 
     if (!initialManifestEntry) {
       // This is a critical state: the manifest is likely empty or missing 'ja' and other fallbacks.
-      console.error(
-        'LanguageService: CRITICAL - Language manifest is empty or essential fallbacks are missing. App functionality will be severely impaired.',
+      log.error(
+        'CRITICAL - Language manifest is empty or essential fallbacks are missing. App functionality will be severely impaired.',
       );
       // Provide a minimal, non-null fallback to prevent immediate crashes.
       this.lang = {
@@ -64,14 +68,12 @@ class LanguageService {
     const manifestEntry = languageManifest.find((l) => l.code === code);
 
     if (!manifestEntry) {
-      console.error(
-        `LanguageService: Language code '${code}' not found in manifest. Attempting to fall back.`,
-      );
+      log.error(`Language code '${code}' not found in manifest. Attempting to fall back.`);
       // If the requested code is invalid, try falling back to defaultCode if it's different.
       if (code !== this.defaultCode) {
         const fallbackEntry = languageManifest.find((l) => l.code === this.defaultCode);
         if (fallbackEntry) {
-          console.warn(`LanguageService: Falling back to default language '${this.defaultCode}'.`);
+          log.warn(`Falling back to default language '${this.defaultCode}'.`);
           return this.load(this.defaultCode); // Recursive call with defaultCode.
         }
       }
@@ -90,8 +92,8 @@ class LanguageService {
     const loader = langDataFileLoaders[langFilePath] as (() => Promise<LanguageDef>) | undefined;
 
     if (!loader) {
-      console.error(
-        `LanguageService: No data file loader found for code '${code}' (path: '${langFilePath}'). Check glob pattern and file existence.`,
+      log.error(
+        `No data file loader found for code '${code}' (path: '${langFilePath}'). Check glob pattern and file existence.`,
       );
       throw new Error(`LanguageService: No data file loader for '${code}'.`);
     }
@@ -102,8 +104,8 @@ class LanguageService {
       // Assumes language files (e.g., ja.json) do not yet contain 'direction'.
       loadedLangFileContent = await loader();
     } catch (error) {
-      console.error(
-        `LanguageService: Failed to load language data file for code '${code}' from '${langFilePath}'.`,
+      log.error(
+        `Failed to load language data file for code '${code}' from '${langFilePath}'.`,
         error,
       );
       throw new Error(`LanguageService: Failed to load data for '${code}'.`);
@@ -121,14 +123,14 @@ class LanguageService {
 
     // Sanity check: the code within the loaded file should match the requested (and manifest-validated) code.
     if (loadedLangFileContent.code && loadedLangFileContent.code !== manifestEntry.code) {
-      console.warn(
-        `LanguageService: Mismatch! Requested/Manifest code '${manifestEntry.code}', but file contains code '${loadedLangFileContent.code}'. Prioritizing manifest code.`,
+      log.warn(
+        `Mismatch! Requested/Manifest code '${manifestEntry.code}', but file contains code '${loadedLangFileContent.code}'. Prioritizing manifest code.`,
       );
       this.lang.code = manifestEntry.code; // Ensure consistency.
     }
 
     // Cache the successfully loaded (and validated) language code.
-    localStorage.setItem('kanaPop.lang', this.lang.code);
+    this.persistLang(this.lang.code);
   }
 
   get symbols(): SymbolDef[] {
@@ -146,12 +148,20 @@ class LanguageService {
   randomGlyph(sym: SymbolDef): string {
     const variants = Object.values(sym.glyphs);
     if (variants.length === 0) {
-      console.warn(
-        `LanguageService: Symbol with roman='${sym.roman}' (category: ${sym.category}, lang: ${this.lang.code}) has no glyphs defined. Returning '?' as fallback.`,
+      log.warn(
+        `Symbol with roman='${sym.roman}' (category: ${sym.category}, lang: ${this.lang.code}) has no glyphs defined. Returning '?' as fallback.`,
       );
       return '?';
     }
     return variants[Math.floor(Math.random() * variants.length)]!;
+  }
+
+  /**
+   * Persists the current language code to storage
+   * @param code The language code to persist
+   */
+  private persistLang(code: string): void {
+    StorageService.set('kanaPop.lang', code);
   }
 }
 
