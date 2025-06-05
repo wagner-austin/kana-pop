@@ -49,9 +49,7 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
       backgroundRenderer.draw(ctx);
 
       const parallax = backgroundRenderer.getOffset();
-      bubbles.entities.forEach((b) =>
-        bubbleRenderer.render(ctx, b, cssW, cssH, parallax),
-      );
+      bubbles.entities.forEach((b) => bubbleRenderer.render(ctx, b, cssW, cssH, parallax));
     },
     async enter() {
       log.info('Play screen entered');

@@ -23,7 +23,7 @@ export default class BackgroundRenderer {
 
   /* parallax state */
   private offset: MotionSample = { x: 0, y: 0 };
-  
+
   /** Public read-only access so other renderers can reuse the same offset. */
   getOffset(): MotionSample {
     return this.offset;
@@ -133,38 +133,8 @@ export default class BackgroundRenderer {
     ctx.fillStyle = BACKGROUND_COLOUR;
     ctx.fillRect(0, 0, w, h);
 
-    /* ----- simple star-field layer with parallax ----- */
-    ctx.save();
-    // Apply parallax shift
-    const shiftX = this.offset.x * this.MAX_SHIFT;
-    const shiftY = this.offset.y * this.MAX_SHIFT;
-    ctx.translate(shiftX, shiftY);
-
-    // Calculate bounds for drawing stars to cover the canvas even when shifted
-    const startX = -this.MAX_SHIFT - 48; // Use largest step size for bounds
-    const startY = -this.MAX_SHIFT - 48;
-    const endX = w + this.MAX_SHIFT + 48;
-    const endY = h + this.MAX_SHIFT + 48;
-    
-    /* ----- star-field layers ----- */
-    const FAR = { step: 48, size: 1, alpha: 0.20 };
-    const NEAR = { step: 32, size: 2, alpha: 0.35 };
-
-    const drawStars = ({ step, size, alpha }: { step: number; size: number; alpha: number }) => {
-      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
-      for (let y = startY; y < endY; y += step) {
-        for (let x = startX; x < endX; x += step) {
-          // Random jitter so the grid isn't obvious
-          const jx = x + (Math.random() - 0.5) * step * 0.4;
-          const jy = y + (Math.random() - 0.5) * step * 0.4;
-          ctx.fillRect(jx, jy, size, size);
-        }
-      }
-    };
-
-    drawStars(FAR);  // dim background layer
-    drawStars(NEAR); // brighter foreground layer
-    ctx.restore();
+    // No star field - just the solid background color
+    // We maintain the offset data for bubble parallax, but don't draw anything extra
   }
 
   // Call this method if the renderer is being destroyed or background changes
