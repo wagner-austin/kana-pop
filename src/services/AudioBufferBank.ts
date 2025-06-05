@@ -15,9 +15,9 @@ export default class AudioBufferBank {
    * Ensures the AudioContext exists and is in the running state
    * This is the single point of access for the AudioContext
    */
-  private async ensureContext(): Promise<AudioContext> {
-    if (!this.ctx) {
-      /* Pick the available constructor *now*, inside the gesture */
+  /** Safe point of access for anything that needs a live, unmuted context */
+  async ensureContext(): Promise<AudioContext> {
+    const create = () => {
       const globalAudio = globalThis as typeof globalThis & {
         AudioContext?: typeof AudioContext;
         webkitAudioContext?: typeof AudioContext;
@@ -25,28 +25,37 @@ export default class AudioBufferBank {
       const Ctor = globalAudio.AudioContext ?? globalAudio.webkitAudioContext;
       if (!Ctor) throw new Error('Web Audio API not supported');
 
-      // Create the context - no need for latencyHint options as they add complexity without benefit
-      this.ctx = new Ctor();
-
-      // Add debug state change handler only in development
+      const ctx = new Ctor();
       if (import.meta.env.DEV) {
-        this.ctx.onstatechange = () => log.debug(`Audio context state → ${this.ctx!.state}`);
+        ctx.onstatechange = () => log.debug(`Audio context state → ${ctx.state}`);
       }
+      log.info(`Created new AudioContext: ${ctx.state}`);
+      return ctx;
+    };
 
-      log.info(`Created new AudioContext: ${this.ctx.state}`);
-    }
+    /* ① create if missing or closed */
+    if (!this.ctx || this.ctx.state === 'closed') this.ctx = create();
 
-    // Resume the context if needed
-    if (this.ctx.state === 'suspended') {
-      log.info(`Attempting to resume AudioContext from ${this.ctx.state} state`);
-
+    /* ② try to resume suspended *or* interrupted */
+    if (this.ctx.state === 'suspended' || (this.ctx.state as string) === 'interrupted') {
+      log.info(`Attempting resume() from ${this.ctx.state}`);
       try {
         await this.ctx.resume();
-        log.info(`AudioContext resumed: ${this.ctx.state}`);
       } catch (err) {
-        log.error('Failed to resume AudioContext', err);
-        throw err;
+        log.warn('resume() threw', err);
       }
+    }
+
+    /* ③ if still not running, rebuild right now */
+    if (this.ctx.state !== 'running') {
+      log.warn(`AudioContext stuck in '${this.ctx.state}', recreating…`);
+      try {
+        await this.ctx.close();
+      } catch {
+        /* ignore errors while closing — we'll create a fresh context next */
+      }
+      this.ctx = create();
+      await this.ctx.resume();
     }
 
     return this.ctx;
