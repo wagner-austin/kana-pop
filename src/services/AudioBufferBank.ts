@@ -97,7 +97,7 @@ export default class AudioBufferBank {
         // Create a longer silent buffer for more reliable unlocking
         const sampleRate = ctx.sampleRate || 44100;
         const silentBuffer = ctx.createBuffer(2, sampleRate * 0.5, sampleRate); // 500ms stereo buffer
-        
+
         // Fill the buffer with silence (all zeros)
         for (let channel = 0; channel < 2; channel++) {
           const data = silentBuffer.getChannelData(channel);

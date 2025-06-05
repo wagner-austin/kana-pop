@@ -22,19 +22,19 @@ class SoundService {
     if (this.isGestureArmed) return;
     this.isGestureArmed = true;
     log.info('First gesture handler armed');
-    
+
     // For iPad Safari and iPad Chrome, we need more aggressive handling
     const isSpecialDevice = requiresSpecialAudioHandling();
-    
+
     // Keep track of all registered handlers to clean up later
     const registeredEvents: { target: EventTarget; type: string }[] = [];
-    
+
     // Function to register an event listener and track it
     const registerEvent = (target: EventTarget, eventType: string) => {
       target.addEventListener(eventType, unlockAudio, { passive: true });
       registeredEvents.push({ target, type: eventType });
     };
-    
+
     // Function to clean up all event listeners
     const cleanupEvents = () => {
       log.info('Cleaning up audio unlock event listeners');
@@ -46,7 +46,7 @@ class SoundService {
     // Define a single handler for the user gesture
     const unlockAudio = async () => {
       log.info('User gesture detected, unlocking audio');
-      
+
       // Flag to track if we've successfully unlocked
       let unlocked = false;
 
@@ -63,18 +63,18 @@ class SoundService {
           // Fallback to HTML Audio element if Web Audio API fails
           const audio = new Audio(SoundService.SILENT);
           audio.autoplay = true; // Set property directly
-          audio.muted = false;   // Don't mute - we need actual audio
-          audio.volume = 0.001;  // Very low volume
+          audio.muted = false; // Don't mute - we need actual audio
+          audio.volume = 0.001; // Very low volume
           audio.setAttribute('playsinline', '');
-          
+
           // Try playing the silent audio
           log.info('Playing fallback HTML audio');
           const playPromise = audio.play();
-          
+
           if (playPromise instanceof Promise) {
             await playPromise;
             log.info('Fallback audio played successfully');
-            
+
             // Try one more time to resume the AudioContext after playing silent audio
             try {
               await this.bank.resume();
@@ -90,10 +90,10 @@ class SoundService {
           log.error('All audio unlock attempts failed', fallbackErr);
         }
       }
-      
+
       // Only resolve the promise and clean up if we've succeeded or made our best attempt
       this.triggerReady(); // Always trigger ready to avoid blocking the app
-      
+
       // On iPad, we keep the listeners for a second attempt if unlocking failed
       if (unlocked || !isSpecialDevice) {
         cleanupEvents();
@@ -104,12 +104,12 @@ class SoundService {
 
     // Register handlers on multiple elements and events for maximum coverage
     log.info('Registering audio unlock gesture handlers');
-    
+
     // Basic handlers on the provided element
     registerEvent(el, 'pointerdown');
     registerEvent(el, 'touchstart');
     registerEvent(el, 'click');
-    
+
     // On iOS/iPadOS, add more handlers at the document level
     if (isSpecialDevice) {
       log.info('Adding extra handlers for iOS/iPadOS');
@@ -119,7 +119,7 @@ class SoundService {
       registerEvent(document, 'pointerdown');
       registerEvent(document, 'touchstart');
       registerEvent(document, 'click');
-      
+
       // Try to include the window as well
       registerEvent(window, 'pointerdown');
       registerEvent(window, 'touchstart');

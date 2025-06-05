@@ -44,16 +44,16 @@ export function isSafari(): boolean {
 export function requiresSpecialAudioHandling(): boolean {
   // Be more aggressive with detection to ensure iPad browsers are covered
   if (typeof navigator === 'undefined') return false;
-  
+
   // First use our precise detection functions
   if (isIOS() || isIPadOS()) return true;
-  
+
   // Add a fallback detection based on userAgent directly
   const ua = navigator.userAgent;
   if (/iPad|iPhone|iPod/.test(ua)) return true;
-  
+
   // iPadOS 13+ doesn't show iPad in UA, and appears as Mac with touch support
   if (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 0) return true;
-  
+
   return false;
 }
