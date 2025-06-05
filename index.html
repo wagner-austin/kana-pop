@@ -2,8 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <!-- `viewport-fit=cover` lets us use the whole safe-area on iOS. -->
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <title>Kana Pop!</title>
+    <link rel="stylesheet" href="/src/styles/global.css" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
@@ -20,18 +22,6 @@
       rel="stylesheet"
       crossorigin="anonymous"
     />
-    <style>
-      html,
-      body {
-        margin: 0;
-        height: 100%;
-      }
-      #game {
-        width: 100vw; /* full viewport width  */
-        height: 100vh; /* full viewport height */
-        display: block; /* removes inline-block gap */
-      }
-    </style>
   </head>
   <body>
     <canvas id="game"></canvas>

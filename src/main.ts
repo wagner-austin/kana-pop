@@ -5,6 +5,18 @@ import makePlay from './screens/Play';
 import Sound from './services/SoundService';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#game')!;
+
+/** ------------------------------------------------------------------
+ *  Dynamically set --app-height to the “true” viewport height so that
+ *  CSS can use `height: var(--app-height)` as a guaranteed lock.
+ *  Needed for iOS <= 14 where `100vh` and `100dvh` are both wrong.
+ * -----------------------------------------------------------------*/
+function setAppHeight() {
+  document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
+}
+setAppHeight();
+window.addEventListener('orientationchange', setAppHeight);
+window.addEventListener('resize', setAppHeight);
 const ctx = canvas.getContext('2d')!;
 
 // Attach immediately, so the *very first* tap counts

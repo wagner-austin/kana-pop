@@ -1,0 +1,24 @@
+/* ---------------------------------------------
+   Universal viewport lock – no scrolling,
+   no rubber-band, full-bleed canvas.
+----------------------------------------------*/
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+}
+
+/* Canvas always covers the *visual* viewport */
+#game {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  /* Modern browsers honour 100dvh. Older ones will receive --app-height from JS. */
+  height: 100dvh;
+  height: var(--app-height);
+  display: block;
+}
