@@ -72,6 +72,8 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
       ResizeService.unsubscribe(handleResize);
       input.detach();
       bubbles.clear();
+      /* stop gyro / fallback RAF to avoid leaks */
+      backgroundRenderer.dispose();
     },
   };
 }
