@@ -20,9 +20,9 @@ export default class BubbleRenderer {
 
     // ---- kana glyph ----
     ctx.fillStyle = FONT_COLOUR;
-    ctx.textAlign = 'center';
+    ctx.textAlign = 'center'; // Glyphs in bubbles should always be centered.
     ctx.textBaseline = 'middle';
     ctx.font = `${Math.round(r * KANA_FONT_RATIO)}px ${FONT_FAMILY}`;
-    ctx.fillText(b.kana, pxX, pxY);
+    ctx.fillText(b.glyph, pxX, pxY);
   }
 }

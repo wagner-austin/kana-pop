@@ -13,6 +13,8 @@ const log = new Logger('Play');
 let fpsTimer = 0;
 let frames = 0;
 
+const randInt = (max: number): number => Math.floor(Math.random() * max);
+
 const randColor = (): string => {
   if (COLOURS.length === 0) return '#FFFFFF'; // Default to white if COLOURS is empty
   const color = COLOURS[Math.floor(Math.random() * COLOURS.length)];
@@ -67,10 +69,7 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
       const bubble = bubbles[i];
       if (bubble && bubble.contains(clickPixelX, clickPixelY, w, h)) {
         bubble.pop();
-        const audioFile = Lang.symbols.find((sym) => sym.char === bubble.kana)?.audio;
-        if (audioFile) {
-          Sound.play(`${Lang.currentCode}/${audioFile}`);
-        }
+        Sound.playRoman(bubble.romaji);
         romajiSprites.push(new FloatingRomaji(bubble.x, bubble.y, bubble.romaji, bubble.speed));
         // Optional: break here if only one bubble can be popped per click
         break;
@@ -90,7 +89,7 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
       frames++;
       if (fpsTimer >= 1) {
         const fps = Math.round(frames / fpsTimer);
-        if (localStorage.getItem('logLevel') === 'debug') {
+        if (Logger.isDebug) {
           log.debug('fps', fps);
         }
         fpsTimer = 0;
@@ -100,8 +99,9 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
       spawn -= dt;
       if (spawn <= 0) {
         if (Lang.symbols && Lang.symbols.length > 0) {
-          const sym = Lang.symbols[Math.floor(Math.random() * Lang.symbols.length)]!;
-          const b = new Bubble(Math.random(), 1.0, randColor(), sym.char, sym.roman);
+          const sym = Lang.symbols[randInt(Lang.symbols.length)]!;
+          const glyph = Lang.randomGlyph(sym);
+          const b = new Bubble(Math.random(), 1.0, randColor(), glyph, sym.roman);
           bubbles.push(b);
           log.debug('spawned bubble', bubbles.length);
           spawn = SPAWN_INTERVAL;
@@ -138,7 +138,12 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
     },
     async enter() {
       log.info('Play screen entered');
-      await Lang.load('ja'); // blocks until JSON parsed
+      Sound.armFirstGesture(ctx.canvas); // Must be first to arm audio context
+
+      // Load language data first to ensure Lang.symbols is populated.
+      await Lang.load('ja');
+      // Then, preload all audio files based on the loaded symbols.
+      await Sound.preloadAll(Lang.symbols.map((s) => `${Lang.currentCode}/${s.audio}`));
       ready = true;
       ResizeService.subscribe(handleResize);
       // Call handleResize once initially to set correct scaling if canvas size differs from prevW/prevH defaults

@@ -10,10 +10,10 @@ export default class Bubble {
     public x: number,
     public y: number,
     public color: string,
-    public kana: string,
+    public glyph: string,
     public romaji: string,
   ) {
-    log.debug('spawn', { x: this.x.toFixed(2), color, kana });
+    log.debug('spawn', { x: this.x.toFixed(2), color, glyph: this.glyph });
   }
   // kept intentionally dumb – no Canvas API here
 
