@@ -1,6 +1,5 @@
-import Bubble from '../entities/Bubble';
-import { COLOURS, SPAWN_INTERVAL } from '../config/constants';
-import { bubbleRadius } from '../utils/bubble';
+import BubbleManager from '../managers/BubbleManager';
+import PointerInput from '../input/PointerInput';
 import BackgroundRenderer from '../renderers/BackgroundRenderer';
 import BubbleRenderer from '../renderers/BubbleRenderer';
 import Logger from '../utils/Logger';
@@ -13,72 +12,15 @@ const log = new Logger('Play');
 let fpsTimer = 0;
 let frames = 0;
 
-const randInt = (max: number): number => Math.floor(Math.random() * max);
-
-const randColor = (): string => {
-  if (COLOURS.length === 0) return '#FFFFFF'; // Default to white if COLOURS is empty
-  const color = COLOURS[Math.floor(Math.random() * COLOURS.length)];
-  return color ?? '#FFFFFF'; // Default to white if selected color is somehow undefined
-};
-
 export default function makePlay(ctx: CanvasRenderingContext2D) {
-  let bubbles: Bubble[] = [];
-  let prevCssW = ctx.canvas.clientWidth;
-  let prevCssH = ctx.canvas.clientHeight;
-  let spawn = 0;
+  const bubbles = new BubbleManager(ctx.canvas);
   const bubbleRenderer = new BubbleRenderer();
   const backgroundRenderer = new BackgroundRenderer();
 
   let ready = false;
 
-  const handleResize = () => {
-    const { w: newW, h: newH } = cssSize(ctx.canvas);
-
-    /* ── keep cached bubbles in sync with the new zoom ──────────────── */
-    const newR = bubbleRadius(newW, newH);
-    // Radius depends only on the *current* viewport, so we can overwrite
-    // every existing bubble instead of respawning them all.
-    bubbles.forEach((b) => (b.r = newR));
-
-    if (prevCssW === 0 || prevCssH === 0) {
-      // Avoid division by zero on initial load if dimensions are 0
-      prevCssW = newW;
-      prevCssH = newH;
-      return;
-    }
-
-    const sx = newW / prevCssW;
-    const sy = newH / prevCssH;
-
-    if (!Number.isFinite(sx) || sx === 0 || !Number.isFinite(sy) || sy === 0) {
-      // Update prevW/prevH even if scaling factors are invalid to prevent issues on subsequent resizes
-      prevCssW = newW;
-      prevCssH = newH;
-      return;
-    }
-
-    // Bubbles are already stored as normalised [0-1] coordinates.
-    // No positional adjustment is necessary on resize.
-
-    prevCssW = newW;
-    prevCssH = newH;
-  };
-
-  const handlePointerDown = (event: PointerEvent) => {
-    const rect = ctx.canvas.getBoundingClientRect();
-    const clickPixelX = event.clientX - rect.left;
-    const clickPixelY = event.clientY - rect.top;
-
-    // Iterate in reverse so top-most bubbles are checked first
-    const { w, h } = cssSize(ctx.canvas); // << once
-    for (let i = bubbles.length - 1; i >= 0; i--) {
-      const bubble = bubbles[i];
-      if (bubble && bubble.contains(clickPixelX, clickPixelY, w, h)) {
-        bubble.handleClick(performance.now() / 1000);
-        break;
-      }
-    }
-  };
+  const handleResize = () => bubbles.handleResize();
+  const input = new PointerInput(ctx.canvas, bubbles);
 
   return {
     update(dt: number) {
@@ -100,43 +42,13 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
         frames = 0;
       }
 
-      spawn -= dt;
-      if (spawn <= 0) {
-        if (Lang.symbols && Lang.symbols.length > 0) {
-          const sym = Lang.symbols[randInt(Lang.symbols.length)]!;
-          const glyph = Lang.randomGlyph(sym);
+      bubbles.update(dt);
 
-          // ---- new: keep the whole bubble on-screen ---------------------------------
-          const { w } = cssSize(ctx.canvas); // current CSS-pixel width
-          const rPx = bubbleRadius(cssW, cssH); // use *current* size
-          const rNorm = rPx / w;
-          const xCentre = rNorm + Math.random() * (1 - 2 * rNorm); // [rNorm , 1 - rNorm]
-          const ySpawn = 1 + rNorm; // spawn just below the bottom edge
-          // ---------------------------------------------------------------------------
-
-          const b = new Bubble(xCentre, ySpawn, randColor(), glyph, sym.roman, rPx);
-          bubbles.push(b);
-          log.debug('spawned bubble', bubbles.length);
-          spawn = SPAWN_INTERVAL;
-        } else {
-          // Optionally log if symbols are not ready, or handle as per game design
-          // log.debug('Symbols not loaded, skipping bubble spawn');
-        }
-      }
-
-      // ── Cull inactive entities *before* drawing ────────────────────────
-      //   so popped bubbles don’t get rendered for an extra frame.
-      if (bubbles.some((b) => !b.active)) {
-        bubbles = bubbles.filter((b) => b.active);
-      }
       backgroundRenderer.update(dt);
-
-      // Update bubble positions
-      bubbles.forEach((b) => b.step(dt));
 
       backgroundRenderer.draw(ctx);
 
-      bubbles.forEach((b) => bubbleRenderer.render(ctx, b, cssW, cssH));
+      bubbles.entities.forEach((b) => bubbleRenderer.render(ctx, b, cssW, cssH));
     },
     async enter() {
       log.info('Play screen entered');
@@ -153,14 +65,13 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
       ResizeService.subscribe(handleResize);
       // Call handleResize once initially to set correct scaling if canvas size differs from prevW/prevH defaults
       handleResize();
-      ctx.canvas.addEventListener('pointerdown', handlePointerDown);
+      input.attach();
     },
     exit() {
       log.info('Play screen exited');
       ResizeService.unsubscribe(handleResize);
-      ctx.canvas.removeEventListener('pointerdown', handlePointerDown);
-      // Clear bubbles or other screen-specific state if necessary
-      bubbles = []; // Clear for replay
+      input.detach();
+      bubbles.clear();
     },
   };
 }
