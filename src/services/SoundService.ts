@@ -15,6 +15,18 @@ class SoundService {
 
   constructor() {
     this.ready = new Promise<void>((res) => (this.triggerReady = res));
+
+    /* Re-probe the audio pipeline whenever the page regains focus */
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          log.debug('Page became visible – poking AudioContext');
+          this.bank.ensureContext().catch(() => {
+            /* ignore – a user gesture will repair if needed */
+          });
+        }
+      });
+    }
   }
 
   public async armFirstGesture(el: EventTarget = window): Promise<void> {
@@ -35,10 +47,15 @@ class SoundService {
       registeredEvents.push({ target, type: eventType });
     };
 
-    // Function to clean up all event listeners
+    /** Remove every unlock listener *except* one window-level pointerdown */
     const cleanupEvents = () => {
-      log.info('Cleaning up audio unlock event listeners');
+      log.info('Trimming audio unlock listeners (keeping one for re-unlock)');
+      let kept = false;
       registeredEvents.forEach(({ target, type }) => {
+        if (!kept && target === window && type === 'pointerdown') {
+          kept = true; // keep exactly this one
+          return;
+        }
         target.removeEventListener(type, unlockAudio);
       });
     };
@@ -91,15 +108,12 @@ class SoundService {
         }
       }
 
-      // Only resolve the promise and clean up if we've succeeded or made our best attempt
-      this.triggerReady(); // Always trigger ready to avoid blocking the app
+      /* Always let anyone awaiting ready() continue */
+      this.triggerReady();
 
-      // On iPad, we keep the listeners for a second attempt if unlocking failed
-      if (unlocked || !isSpecialDevice) {
-        cleanupEvents();
-      } else {
-        log.warn('Audio unlock not confirmed. Keeping event listeners for another attempt.');
-      }
+      /* If we have a fully running context trim listeners, otherwise keep them all */
+      if (unlocked) cleanupEvents();
+      else log.warn('Audio still locked – listeners stay armed for another try');
     };
 
     // Register handlers on multiple elements and events for maximum coverage
