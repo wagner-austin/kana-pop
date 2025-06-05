@@ -26,7 +26,7 @@ export default class FloatingRomaji {
     ctx.globalAlpha = Math.max(0, this.ttl); // linear fade
     ctx.fillStyle = FONT_COLOUR;
     ctx.font = `${Math.round(r * 0.7)}px ${FONT_FAMILY}`;
-    ctx.textAlign = 'center';
+    ctx.textAlign = 'center'; // Floating romaji should also be centered.
     ctx.textBaseline = 'middle';
     ctx.fillText(this.text, this.x * w, this.y * h);
     ctx.restore();
