@@ -1,12 +1,16 @@
 import AudioBufferBank from './AudioBufferBank';
 
+import Loader from '@/services/AssetLoader';
 import Lang from '@/services/LanguageService';
 import Logger from '@/utils/Logger';
+import type { SymbolDef } from '@/types/language';
 import { requiresSpecialAudioHandling } from '@/utils/DeviceInfo';
 
 const log = new Logger('Sound');
 
 class SoundService {
+  private assetLoadCompletedPromise: Promise<void>;
+  private assetLoadCompletedResolve!: () => void; // Definite assignment in constructor
   private bank = new AudioBufferBank();
   private ready!: Promise<void>;
   private triggerReady!: () => void;
@@ -14,7 +18,33 @@ class SoundService {
   private static SILENT =
     'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAIlYAACJWAAABAAgAZGF0YQAAAAA=';
 
+  /* public again – we `new SoundService()` at EOF */
   constructor() {
+    this.assetLoadCompletedPromise = new Promise<void>((resolve) => {
+      this.assetLoadCompletedResolve = resolve;
+    });
+
+    Loader.add(async () => {
+      log.info('SoundService: Waiting for LanguageService to be ready...');
+      await Lang.ready(); // Wait for language data to be loaded
+      log.info('SoundService: LanguageService is ready. Starting sound preload...');
+
+      const soundUrls = Lang.symbols.map((s) => `${Lang.currentCode}/${s.audio}`);
+      if (soundUrls.length > 0) {
+        try {
+          await this.preloadAll(soundUrls);
+          log.info(
+            `SoundService: Successfully preloaded ${soundUrls.length} sounds for language '${Lang.currentCode}'.`,
+          );
+        } catch (error) {
+          log.error('SoundService: Error during sound preloading.', error);
+        }
+      } else {
+        log.info(`SoundService: No sounds to preload for language '${Lang.currentCode}'.`);
+      }
+      this.assetLoadCompletedResolve(); // Sounds are now considered 'ready' (or attempted to load)
+    });
+
     this.ready = new Promise<void>((res) => (this.triggerReady = res));
 
     /* Re-probe the audio pipeline whenever the page regains focus */
@@ -166,7 +196,7 @@ class SoundService {
   }
 
   playRoman(roman: string) {
-    const audio = Lang.symbols.find((s) => s.roman === roman)?.audio;
+    const audio = Lang.symbols.find((s: SymbolDef) => s.roman === roman)?.audio;
     if (audio) this.play(`${Lang.currentCode}/${audio}`);
   }
 
@@ -191,6 +221,10 @@ class SoundService {
     );
 
     log.info('Audio preloading complete');
+  }
+
+  public assetsReady(): Promise<void> {
+    return this.assetLoadCompletedPromise;
   }
 }
 

@@ -4,7 +4,15 @@ import ResizeService from '../services/ResizeService';
 import { applyDprTransform, cssSize } from '../utils/canvasMetrics';
 
 export default function makeMenu(sm: StateMachine, ctx: CanvasRenderingContext2D) {
-  const click = () => sm.change('play');
+  function click(e: PointerEvent) {
+    const { w, h } = cssSize(ctx.canvas);
+    const x = e.offsetX;
+    const y = e.offsetY;
+
+    /* bottom-right 60×60px square opens settings */
+    if (x > w - 60 && y > h - 60) sm.push('settings');
+    else sm.change('play');
+  }
 
   function paint() {
     applyDprTransform(ctx); // Ensure transform is active for every paint
@@ -16,6 +24,9 @@ export default function makeMenu(sm: StateMachine, ctx: CanvasRenderingContext2D
     ctx.textAlign = 'center';
     ctx.font = '32px sans-serif';
     ctx.fillText('Tap to Start', width / 2, height / 2);
+    /* small cog */
+    ctx.font = '20px sans-serif';
+    ctx.fillText('⚙︎', width - 30, height - 30);
   }
 
   return {

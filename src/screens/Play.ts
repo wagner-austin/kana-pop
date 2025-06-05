@@ -9,6 +9,7 @@ import Lang from '../services/LanguageService';
 import Sound from '../services/SoundService';
 import StorageService from '../services/StorageService'; // Changed to relative path
 
+import type { SymbolDef } from '@/types/language';
 import Theme from '@/services/ThemeService'; // Added
 
 const log = new Logger('Play');
@@ -74,8 +75,8 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
       await Lang.load('ja');
 
       // Then, kick off audio pre-cache, but **don’t await**
-      Sound.preloadAll(Lang.symbols.map((s) => `${Lang.currentCode}/${s.audio}`)).catch((err) =>
-        log.warn('audio preload', err),
+      Sound.preloadAll(Lang.symbols.map((s: SymbolDef) => `${Lang.currentCode}/${s.audio}`)).catch(
+        (err: unknown) => log.warn('audio preload', err),
       );
 
       ready = true; // start the game immediately

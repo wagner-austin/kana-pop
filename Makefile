@@ -86,13 +86,13 @@ test-coverage:
 # Save code utility
 savecode:
 	@echo "💾 Running savecode utility..."
-	savecode . --skip test .\.vscode\ .\node_modules\ --ext ts html yml webmanifest
+	savecode . --skip test docs .\.vscode\ .\node_modules\ --ext ts html yml webmanifest css json
 	@echo "✅ Code saved (skipped test dir)."
 
 # Save code utility (including test directory)
 savecode-test:
 	@echo "💾 Running savecode utility (including test dir)..."
-	savecode . --skip .\.vscode\ .\node_modules\ --ext ts html yml webmanifest
+	savecode . --skip docs .\.vscode\ .\node_modules\ --ext ts html yml webmanifest css json
 	@echo "✅ Code saved (included test dir)."
 
 # Set default goal to 'help' so running 'make' without arguments shows the help message.

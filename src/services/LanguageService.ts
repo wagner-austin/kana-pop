@@ -1,4 +1,5 @@
 import type { LanguageDef, SymbolDef } from '@/types/language';
+import Loader from '@/services/AssetLoader';
 import StorageService from '@/utils/StorageService';
 import Logger from '@/utils/Logger';
 import LanguageRepository from '@/repositories/LanguageRepository';
@@ -8,7 +9,10 @@ const log = new Logger('Lang');
 class LanguageService {
   private lang: LanguageDef;
   readonly defaultCode: string;
+  private initialLoadPromise: Promise<void>;
+  private initialLoadResolve!: () => void; // Definite assignment in constructor
 
+  /* ctor must be public if we instantiate below */
   constructor() {
     const savedLang = StorageService.get('kanaPop.lang');
     const browserLang =
@@ -17,6 +21,16 @@ class LanguageService {
 
     // Initialise with sane stub – real symbols arrive after first `load`.
     this.lang = { code: this.defaultCode, name: 'loading…', symbols: [], direction: 'ltr' };
+
+    this.initialLoadPromise = new Promise<void>((resolve) => {
+      this.initialLoadResolve = resolve;
+    });
+
+    Loader.add(async () => {
+      log.info(`LanguageService: Starting initial load for language code '${this.defaultCode}'...`);
+      await this.load(this.defaultCode);
+      log.info('LanguageService: Initial load completed.');
+    });
   }
 
   async load(code: string = this.defaultCode): Promise<void> {
@@ -41,6 +55,11 @@ class LanguageService {
 
     // Cache the successfully loaded (and validated) language code.
     this.persistLang(this.lang.code);
+
+    // Resolve the initial load promise if it hasn't been resolved yet.
+    if (this.initialLoadResolve) {
+      this.initialLoadResolve();
+    }
   }
 
   get symbols(): SymbolDef[] {
@@ -72,6 +91,10 @@ class LanguageService {
    */
   private persistLang(code: string): void {
     StorageService.set('kanaPop.lang', code);
+  }
+
+  public ready(): Promise<void> {
+    return this.initialLoadPromise;
   }
 }
 

@@ -2,6 +2,8 @@ import ResizeService from './services/ResizeService';
 import StateMachine from './core/StateMachine';
 import makeMenu from './screens/Menu';
 import makePlay from './screens/Play';
+import makeSettings from './screens/Settings';
+import makeLoading from './screens/Loading';
 import Sound from './services/SoundService';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#game');
@@ -26,8 +28,12 @@ Sound.armFirstGesture(window);
 ResizeService.watchCanvas(canvas);
 
 const sm = new StateMachine();
-sm.add('menu', makeMenu(sm, ctx)).add('play', makePlay(ctx));
-sm.change('menu');
+sm.add('loading', makeLoading('menu', sm, ctx))
+  .add('menu', makeMenu(sm, ctx))
+  .add('settings', makeSettings(sm, ctx))
+  .add('play', makePlay(ctx));
+/* start at the loader */
+sm.change('loading');
 
 let raf = 0;
 let last = performance.now();
