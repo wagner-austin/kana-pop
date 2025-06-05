@@ -1,7 +1,8 @@
 import Lang from '@/services/LanguageService';
+import AudioBufferBank from './AudioBufferBank';
 
 class SoundService {
-  private cache = new Map<string, HTMLAudioElement>();
+  private bank = new AudioBufferBank();
   private ready!: Promise<void>;
   private triggerReady!: () => void;
   private armed = false; // prevents double-registration
@@ -9,12 +10,6 @@ class SoundService {
 
   constructor() {
     this.ready = new Promise<void>((res) => (this.triggerReady = res));
-
-    window.addEventListener('beforeunload', () => {
-      for (const audioEl of this.cache.values()) {
-        audioEl.pause();
-      }
-    });
   }
 
   armFirstGesture(el: EventTarget = window) {
@@ -25,7 +20,10 @@ class SoundService {
       const a = new Audio(SoundService.SILENT);
       a.play()
         .catch(() => {})
-        .finally(() => this.triggerReady());
+        .finally(() => {
+          this.bank.resume(); // <— wake Web Audio while we’re in-gesture
+          this.triggerReady();
+        });
     };
 
     // One of these will fire on every modern browser
@@ -35,7 +33,7 @@ class SoundService {
   }
 
   async play(path: string) {
-    await this.ready;
+    await this.ready; // waits for the unlock
 
     // The path includes the language code, e.g., "ja/fallback.mp3"
     // If the specific audio file (without lang prefix) is 'fallback.mp3', skip playback.
@@ -43,18 +41,13 @@ class SoundService {
       // console.log('Skipping playback for fallback.mp3');
       return;
     }
-    const url = withHash(`${import.meta.env.BASE_URL}audio/${path}`); // Assuming audio files are in /public/audio/
-    let el = this.cache.get(url);
-    if (!el) {
-      el = new Audio(url);
-      this.cache.set(url, el);
+    const url = withHash(`${import.meta.env.BASE_URL}audio/${path}`);
+    try {
+      const buff = await this.bank.fetch(url);
+      this.bank.play(buff);
+    } catch {
+      // Silent failure is fine (e.g. audio disabled in unit tests)
     }
-
-    el.currentTime = 0;
-    el.play().catch((_error) => {
-      // Ignore errors, especially those related to user gesture requirements for autoplay.
-      // console.warn(`Audio playback failed for ${url}:`, error);
-    });
   }
 
   playRoman(roman: string) {
@@ -63,49 +56,20 @@ class SoundService {
   }
 
   async preloadAll(paths: string[]) {
+    await this.ready; // Wait for audio context to be unmuted by user gesture.
     await Promise.all(
-      paths.map(
-        (p) =>
-          new Promise<void>((resolvePathPromise) => {
-            const url = withHash(`${import.meta.env.BASE_URL}audio/${p}`);
-            const el = new Audio(url);
-
-            // Mute the element before defining/running the warm function.
-            el.muted = true;
-
-            const warm = () => {
-              const playPromise = el.play(); // Attempt to play to kick off decode.
-
-              if (playPromise && typeof playPromise.then === 'function') {
-                return playPromise
-                  .then(() => {
-                    el.pause();
-                    el.currentTime = 0; // Rewind for actual use.
-                  })
-                  .catch(() => {
-                    // Errors during warming play are ignored for the purpose of warming.
-                    // The decode attempt was made.
-                  })
-                  .finally(() => {
-                    el.muted = false; // Always restore muted state.
-                  });
-              } else {
-                // JSDOM or other environments where play() doesn't return a Promise.
-                // The attempt to play (and thus decode) was made.
-                el.muted = false; // Restore muted state.
-                return Promise.resolve(); // Fulfill promise chain.
-              }
-            };
-
-            // Chain the warming process to occur after the initial gesture readiness.
-            // The outer promise for this path (resolvePathPromise) resolves once warming is done.
-            this.ready.then(warm).finally(() => {
-              resolvePathPromise();
-            });
-
-            this.cache.set(url, el); // Cache the element.
-          }),
-      ),
+      paths.map((p) => {
+        // The path 'p' already includes the language code, e.g., "ja/sfx_pop.mp3"
+        // If the path ends with 'fallback.mp3', skip preloading.
+        if (p.endsWith('fallback.mp3')) {
+          // console.log(`Skipping preload for ${p} as it's a fallback sound.`);
+          return Promise.resolve(); // Don't attempt to preload fallback
+        }
+        const url = withHash(`${import.meta.env.BASE_URL}audio/${p}`);
+        return this.bank.fetch(url).catch(() => {
+          /* swallow – other preloads continue */
+        });
+      }),
     );
   }
 }
