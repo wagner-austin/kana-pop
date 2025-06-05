@@ -41,8 +41,9 @@ export default class Bubble {
     this.showingRomaji = !this.showingRomaji;
     Sound.playRoman(this.romaji);
 
-    /* --- NEW: subtle vibration -------------------------------------- */
-    Haptics.vibrate(HAPTIC_DURATION_MS);
+    /* --- Enhanced haptic feedback with pattern ---------------------- */
+    // Use intensity level 2 (medium) and pattern for better physical feedback
+    Haptics.vibrate(HAPTIC_DURATION_MS, 2);
 
     /* -------- visual feedback -------- */
     this.scale = BUBBLE_TAP_SCALE;

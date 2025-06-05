@@ -64,3 +64,7 @@ window.matchMedia = (q: string) =>
   ({ media: q, matches: false, addEventListener() {}, removeEventListener() {} }) as any;
 
 if (!('PointerEvent' in globalThis)) (globalThis as any).PointerEvent = MouseEvent;
+
+// Add shims for HapticService and GyroProvider tests
+Object.defineProperty(globalThis.navigator, 'vibrate', { value: () => true, configurable: true });
+(globalThis as any).DeviceOrientationEvent = function DeviceOrientationEventShim() {};

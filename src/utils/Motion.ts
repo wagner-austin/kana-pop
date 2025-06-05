@@ -7,13 +7,34 @@ export interface MotionProvider {
   stop(): void;
 }
 
+import { IS_DEV, GYRO_INIT_GRACE_PERIOD_MS, DEBUG_ELEMENT_ID_PREFIX } from '@/config/constants';
+
 export class GyroProvider implements MotionProvider {
   private active = false;
+  private lastUpdate = 0;
+  private hadMotionData = false;
+  private debugElement: HTMLElement | null = null;
+  private startedAt = 0; // Added for isActive grace period
   private listener = (e: DeviceOrientationEvent) => {
     // γ ≈ left-right tilt, β ≈ front-back; normalise to –1..1
-    const x = (e.gamma ?? 0) / 45; // 45° gives full offset
-    const y = (e.beta ?? 0) / 45;
+    const gamma = e.gamma ?? 0;
+    const beta = e.beta ?? 0;
+
+    if (gamma !== 0 || beta !== 0) {
+      this.hadMotionData = true;
+    }
+
+    const x = gamma / 45; // 45° gives full offset
+    const y = beta / 45;
+
     this.cb?.({ x: clamp(x), y: clamp(y) });
+
+    // Debug information update - limit to once every 500ms
+    const now = Date.now();
+    if (this.debugElement && now - this.lastUpdate > 500) {
+      this.debugElement.textContent = `Motion: γ=${gamma.toFixed(1)}° β=${beta.toFixed(1)}° (${x.toFixed(2)}, ${y.toFixed(2)})`;
+      this.lastUpdate = now;
+    }
   };
   private cb?: (v: MotionSample) => void;
 
@@ -22,49 +43,101 @@ export class GyroProvider implements MotionProvider {
     if (this.active) return;
     this.cb = cb;
 
+    // Create debug element if in dev mode
+    if (IS_DEV) {
+      this.createDebugElement();
+    }
+
     // iOS 13+ requires an explicit promise-based permission
     // The requestPermission method is a static method on the DeviceOrientationEvent constructor
     const DOREventConstructor = window.DeviceOrientationEvent as unknown as {
       requestPermission?: () => Promise<'granted' | 'denied'>;
     };
 
-    if (DOREventConstructor && typeof DOREventConstructor.requestPermission === 'function') {
-      try {
-        const state = await DOREventConstructor.requestPermission();
-        if (state !== 'granted') {
-          console.warn(
-            'DeviceOrientationEvent permission denied. Gyro motion will not be available initially from this provider.',
-          );
-          // The consumer (BackgroundRenderer) will be responsible for potentially falling back
-          // by checking if this provider becomes active or provides data.
-          return; // Do not proceed if permission is not granted
+    try {
+      // iOS specific permission request
+      if (DOREventConstructor && typeof DOREventConstructor.requestPermission === 'function') {
+        try {
+          const state = await DOREventConstructor.requestPermission();
+          if (state !== 'granted') {
+            console.warn('DeviceOrientationEvent permission denied by user.');
+            this.updateDebugStatus('Permission denied');
+            return;
+          }
+          this.updateDebugStatus('Permission granted, initializing...');
+        } catch (error) {
+          console.warn('Error requesting DeviceOrientationEvent permission:', error);
+          this.updateDebugStatus(`Permission error: ${error}`);
+          return;
         }
-        // If permission is granted, proceed to add event listener below
-      } catch (error) {
-        console.warn(
-          'Error requesting DeviceOrientationEvent permission or permission denied:',
-          error,
-        );
-        // The consumer (BackgroundRenderer) will be responsible for potentially falling back
-        return; // Do not proceed if there was an error or denial
       }
+
+      // For non-iOS browsers, older iOS, or if permission was already granted/not needed
+      window.addEventListener('deviceorientation', this.listener, true);
+      this.active = true;
+      this.startedAt = Date.now(); // Initialize startedAt
+
+      // Check if we actually get any motion data after a short delay
+      setTimeout(() => {
+        if (this.active && !this.hadMotionData) {
+          console.warn('No motion data received after activation');
+          this.updateDebugStatus('No motion data received');
+        } else if (this.active) {
+          this.updateDebugStatus('Motion active');
+        }
+      }, GYRO_INIT_GRACE_PERIOD_MS); // Use constant for timeout
+    } catch (error) {
+      console.error('Unexpected error in motion initialization:', error);
+      this.updateDebugStatus(`Init error: ${error}`);
+      return;
     }
-    // For non-iOS browsers, older iOS, or if permission was already granted/not needed,
-    // or if permission was granted in the block above.
-    window.addEventListener('deviceorientation', this.listener, true);
-    this.active = true;
   }
 
   stop() {
     if (!this.active) return;
     window.removeEventListener('deviceorientation', this.listener, true);
     this.active = false;
-    this.cb = undefined; // Clear callback
+    this.cb = undefined;
+
+    if (this.debugElement && this.debugElement.parentNode) {
+      this.debugElement.parentNode.removeChild(this.debugElement);
+      this.debugElement = null;
+    }
   }
 
   // Helper to check if provider is active (e.g., after attempting to start)
   isActive(): boolean {
-    return this.active;
+    // allow GYRO_INIT_GRACE_PERIOD_MS grace for first sensor reading
+    return (
+      this.active && (this.hadMotionData || Date.now() - this.startedAt < GYRO_INIT_GRACE_PERIOD_MS)
+    );
+  }
+
+  private createDebugElement() {
+    if (typeof document === 'undefined') return;
+
+    const elementId = `${DEBUG_ELEMENT_ID_PREFIX}Motion`;
+    document.getElementById(elementId)?.remove(); // HMR cleanup
+
+    this.debugElement = document.createElement('div');
+    this.debugElement.id = elementId; // Set ID for HMR cleanup
+    this.debugElement.style.position = 'fixed';
+    this.debugElement.style.bottom = '10px';
+    this.debugElement.style.left = '10px';
+    this.debugElement.style.background = 'rgba(0,0,0,0.5)';
+    this.debugElement.style.color = 'white';
+    this.debugElement.style.padding = '5px';
+    this.debugElement.style.fontSize = '12px';
+    this.debugElement.style.zIndex = '9999';
+    this.debugElement.style.pointerEvents = 'none';
+    this.debugElement.textContent = 'Motion: Initializing...';
+    document.body.appendChild(this.debugElement);
+  }
+
+  private updateDebugStatus(message: string) {
+    if (this.debugElement) {
+      this.debugElement.textContent = `Motion: ${message}`;
+    }
   }
 }
 

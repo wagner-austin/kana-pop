@@ -1,5 +1,10 @@
 // src/renderers/BackgroundRenderer.ts
-import { BACKGROUND_COLOUR } from '../config/constants';
+import {
+  BACKGROUND_COLOUR,
+  IS_DEV,
+  DEBUG_MOTION_THROTTLE_MS,
+  DEBUG_ELEMENT_ID_PREFIX,
+} from '../config/constants';
 import { cssSize } from '../utils/canvasMetrics';
 import Logger from '../utils/Logger';
 
@@ -18,12 +23,40 @@ export default class BackgroundRenderer {
 
   /* parallax state */
   private offset: MotionSample = { x: 0, y: 0 };
-  private readonly MAX_SHIFT = 30; // css-px at full tilt
+  private readonly MAX_SHIFT = 50; // css-px at full tilt - increased for more noticeable effect
+  private debugElement: HTMLElement | null = null;
 
   constructor() {
     this.logger.debug('BackgroundRenderer instantiated');
     this.motionProvider = chooseMotionProvider();
+
+    // Initialize debug display in development mode
+    if (IS_DEV) {
+      this.createDebugElement();
+    }
+
     this.startMotionTracking();
+  }
+
+  private createDebugElement() {
+    if (typeof document === 'undefined') return;
+
+    const elementId = `${DEBUG_ELEMENT_ID_PREFIX}Background`;
+    document.getElementById(elementId)?.remove(); // HMR cleanup
+
+    this.debugElement = document.createElement('div');
+    this.debugElement.id = elementId; // Set ID for HMR cleanup
+    this.debugElement.style.position = 'fixed';
+    this.debugElement.style.bottom = '50px';
+    this.debugElement.style.left = '10px';
+    this.debugElement.style.background = 'rgba(0,0,0,0.5)';
+    this.debugElement.style.color = 'white';
+    this.debugElement.style.padding = '5px';
+    this.debugElement.style.fontSize = '12px';
+    this.debugElement.style.zIndex = '9999';
+    this.debugElement.style.pointerEvents = 'none';
+    this.debugElement.textContent = 'Parallax: Initializing...';
+    document.body.appendChild(this.debugElement);
   }
 
   private async startMotionTracking(): Promise<void> {
@@ -70,9 +103,23 @@ export default class BackgroundRenderer {
   update(_dt: number): void {
     // No time-based updates needed here for the offset itself;
     // it's updated directly by the motion provider's callback.
-    // However, if we had other time-based animations for the background,
-    // they would go here.
+
+    // Update debug information display
+    if (this.debugElement) {
+      // Only update about 4 times per second to avoid excessive DOM updates
+      const now = Date.now();
+      if (!this._lastDebugUpdate || now - this._lastDebugUpdate > DEBUG_MOTION_THROTTLE_MS) {
+        // Use constant
+        const pixelShiftX = this.offset.x * this.MAX_SHIFT;
+        const pixelShiftY = this.offset.y * this.MAX_SHIFT;
+        this.debugElement.textContent = `Parallax: ${pixelShiftX.toFixed(1)}px, ${pixelShiftY.toFixed(1)}px`;
+        this._lastDebugUpdate = now;
+      }
+    }
   }
+
+  // Keep track of last debug update time
+  private _lastDebugUpdate = 0;
 
   draw(ctx: CanvasRenderingContext2D): void {
     const { w, h } = cssSize(ctx.canvas); // css-pixel values
@@ -84,9 +131,12 @@ export default class BackgroundRenderer {
     /* ----- simple star-field layer with parallax ----- */
     ctx.save();
     // Apply parallax shift
-    ctx.translate(this.offset.x * this.MAX_SHIFT, this.offset.y * this.MAX_SHIFT);
+    const shiftX = this.offset.x * this.MAX_SHIFT;
+    const shiftY = this.offset.y * this.MAX_SHIFT;
+    ctx.translate(shiftX, shiftY);
 
-    const step = 80; // Spacing of stars
+    const step = 40; // Spacing of stars - reduced for density
+    const starSize = 2; // Size of stars in pixels - increased for visibility
     ctx.fillStyle = 'rgba(255,255,255,0.12)'; // Star color and transparency
 
     // Calculate bounds for drawing stars to cover the canvas even when shifted
@@ -99,7 +149,7 @@ export default class BackgroundRenderer {
       for (let x = startX; x < endX; x += step) {
         // Add a little pseudo-randomness to star positions if desired
         // For now, a simple grid
-        ctx.fillRect(x, y, 2, 2); // Star size
+        ctx.fillRect(x, y, starSize, starSize); // Star size
       }
     }
     ctx.restore();
@@ -110,6 +160,13 @@ export default class BackgroundRenderer {
     if (this.motionProvider) {
       this.motionProvider.stop();
       this.logger.debug('Motion provider stopped.');
+    }
+
+    // Clean up debug element
+    if (this.debugElement && this.debugElement.parentNode) {
+      this.debugElement.parentNode.removeChild(this.debugElement);
+      this.debugElement = null;
+      this.logger.debug('Debug display removed.');
     }
   }
 }
