@@ -7,8 +7,7 @@ import { cssSize, applyDprTransform } from '../utils/canvasMetrics';
 import ResizeService from '../services/ResizeService';
 import Lang from '../services/LanguageService';
 import Sound from '../services/SoundService';
-import Popup from '../entities/Popup';
-import type { SymbolDef } from '../services/LanguageService';
+import FloatingRomaji from '../entities/FloatingRomaji';
 
 const log = new Logger('Play');
 let fpsTimer = 0;
@@ -27,20 +26,8 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
   let spawn = 0;
   const bubbleRenderer = new BubbleRenderer();
   const backgroundRenderer = new BackgroundRenderer();
-  let popups: Popup[] = [];
+  let romajiSprites: FloatingRomaji[] = [];
   let ready = false;
-
-  const FALLBACK_SYMBOL: SymbolDef = { char: '?', roman: '?', audio: 'fallback.mp3' }; // Define a fallback
-
-  const randSymbol = (): SymbolDef => {
-    if (!Lang.symbols || Lang.symbols.length === 0) {
-      log.error('randSymbol called but Lang.symbols is empty. Returning fallback symbol.');
-      return FALLBACK_SYMBOL;
-    }
-    // This assumes Lang.symbols is populated and non-empty by the time it's called.
-    // Error handling for empty symbols array might be needed depending on game robustness requirements.
-    return Lang.symbols[Math.floor(Math.random() * Lang.symbols.length)]!;
-  };
 
   const handleResize = () => {
     const { w: newW, h: newH } = cssSize(ctx.canvas);
@@ -80,8 +67,11 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
       const bubble = bubbles[i];
       if (bubble && bubble.contains(clickPixelX, clickPixelY, w, h)) {
         bubble.pop();
-        Sound.play(`${Lang.currentCode}/${bubble.sym.audio}`);
-        popups.push(new Popup(clickPixelX, clickPixelY, bubble.sym.roman));
+        const audioFile = Lang.symbols.find((sym) => sym.char === bubble.kana)?.audio;
+        if (audioFile) {
+          Sound.play(`${Lang.currentCode}/${audioFile}`);
+        }
+        romajiSprites.push(new FloatingRomaji(bubble.x, bubble.y, bubble.romaji, bubble.speed));
         // Optional: break here if only one bubble can be popped per click
         break;
       }
@@ -109,11 +99,16 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
 
       spawn -= dt;
       if (spawn <= 0) {
-        const s = randSymbol();
-        const b = new Bubble(Math.random(), 1.0, randColor(), s); // y=1.0 is bottom of screen
-        bubbles.push(b);
-        log.debug('spawned bubble', bubbles.length);
-        spawn = SPAWN_INTERVAL;
+        if (Lang.symbols && Lang.symbols.length > 0) {
+          const sym = Lang.symbols[Math.floor(Math.random() * Lang.symbols.length)]!;
+          const b = new Bubble(Math.random(), 1.0, randColor(), sym.char, sym.roman);
+          bubbles.push(b);
+          log.debug('spawned bubble', bubbles.length);
+          spawn = SPAWN_INTERVAL;
+        } else {
+          // Optionally log if symbols are not ready, or handle as per game design
+          // log.debug('Symbols not loaded, skipping bubble spawn');
+        }
       }
 
       // ── Cull inactive entities *before* drawing ────────────────────────
@@ -122,8 +117,8 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
         bubbles = bubbles.filter((b) => b.active);
       }
       // Filter out expired popups
-      if (popups.some((p) => p.ttl <= 0)) {
-        popups = popups.filter((p) => p.ttl > 0);
+      if (romajiSprites.some((p) => p.ttl <= 0)) {
+        romajiSprites = romajiSprites.filter((p) => p.ttl > 0);
       }
 
       backgroundRenderer.update(dt);
@@ -132,14 +127,14 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
       bubbles.forEach((b) => b.step(dt));
 
       // Update popup positions and TTL
-      popups.forEach((p) => p.step(dt));
+      romajiSprites.forEach((p) => p.step(dt));
 
       backgroundRenderer.draw(ctx);
 
       bubbles.forEach((b) => bubbleRenderer.render(ctx, b));
 
       // Draw popups
-      popups.forEach((p) => p.draw(ctx));
+      romajiSprites.forEach((p) => p.draw(ctx));
     },
     async enter() {
       log.info('Play screen entered');
@@ -156,7 +151,7 @@ export default function makePlay(ctx: CanvasRenderingContext2D) {
       ctx.canvas.removeEventListener('pointerdown', handlePointerDown);
       // Clear bubbles or other screen-specific state if necessary
       bubbles = [];
-      popups = []; // Clear popups as well
+      romajiSprites = []; // Clear popups as well
     },
   };
 }
