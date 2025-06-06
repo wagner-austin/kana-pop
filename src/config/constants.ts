@@ -1,6 +1,6 @@
 /** Pure static facts – no `window`, no services.  */
 export const SPAWN_INTERVAL = 1.2; // s
-export const BUBBLE_ALPHA = 0.5;
+export const BUBBLE_ALPHA = 0.6;
 
 // Colours come from JSON so designers can edit without code-changes.
 
@@ -31,7 +31,7 @@ export const BUBBLE_SIZE_RATIO = 0.10;
 export const KANA_FONT_RATIO = 0.85;
 
 /** Romaji text size as a fraction of bubble radius */
-export const ROMAJI_FONT_RATIO = 0.60;
+export const ROMAJI_FONT_RATIO = 0.65;
 
 /** Minimum seconds between successive pronunciations of the *same* bubble */
 export const AUDIO_COOLDOWN = 0.4;
