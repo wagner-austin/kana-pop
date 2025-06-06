@@ -57,8 +57,21 @@ export class ImageEffect implements IBackgroundEffect {
         this.imgHorizontal.src = src.replace('vertical', 'horizontal');
       } else {
         // If no orientation specified, try to load both variations
-        this.imgHorizontal.src = `${basePath}background_horizontal.png`;
-        this.imgVertical.src = `${basePath}background_vertical.png`;
+        // Only for GitHub Pages deployment, we'll need to account for the base path
+        // Use relative paths for local development
+        if (window.location.hostname === 'wagner-austin.github.io' || 
+            window.location.hostname.includes('github.io')) {
+          // When on GitHub Pages
+          const baseUrl = '/kana-pop/';
+          const fullBasePath = basePath.startsWith('/') ? 
+            `${baseUrl}${basePath.substring(1)}` : `${baseUrl}${basePath}`;
+          this.imgHorizontal.src = `${fullBasePath}background_horizontal.png`;
+          this.imgVertical.src = `${fullBasePath}background_vertical.png`;
+        } else {
+          // Local development
+          this.imgHorizontal.src = `${basePath}background_horizontal.png`;
+          this.imgVertical.src = `${basePath}background_vertical.png`;
+        }
       }
 
       ImageEffect.log.debug(
