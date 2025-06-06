@@ -12,7 +12,7 @@ import type Bubble from '@/entities/Bubble';
 
 export default class BubbleRenderer {
   // Helper function to create a pastel darkened version of a color
-  private pastelDarken(color: string, amount: number): string {
+  private pastelDarken(color: string, amount: number, alpha: number = 1): string {
     // Extract RGB components
     const rgb = this.extractRGB(color);
 
@@ -22,11 +22,11 @@ export default class BubbleRenderer {
     const g = Math.floor(rgb.g * (1 - amount) + 20);
     const b = Math.floor(rgb.b * (1 - amount * 0.5) + 40); // Keep blues stronger for pastel feel
 
-    return `rgb(${Math.min(r, 255)}, ${Math.min(g, 255)}, ${Math.min(b, 255)})`;
+    return `rgba(${Math.min(r, 255)}, ${Math.min(g, 255)}, ${Math.min(b, 255)}, ${alpha})`;
   }
 
   // Helper function to create a pastel lightened version of a color
-  private pastelLighten(color: string, amount: number): string {
+  private pastelLighten(color: string, amount: number, alpha: number = 1): string {
     // Extract RGB components
     const rgb = this.extractRGB(color);
 
@@ -35,11 +35,16 @@ export default class BubbleRenderer {
     const g = Math.floor(rgb.g + (255 - rgb.g) * amount);
     const b = Math.floor(rgb.b + (255 - rgb.b) * amount);
 
-    return `rgb(${r}, ${g}, ${b})`;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }
 
   // Helper function to extract RGB values from different color formats
-  private extractRGB(color: string): { r: number; g: number; b: number } {
+  private extractRGB(color: string): {
+    r: number;
+    g: number;
+    b: number;
+    toRGBA: (alpha: number) => string;
+  } {
     let r = 100,
       g = 100,
       b = 100;
@@ -61,7 +66,12 @@ export default class BubbleRenderer {
       }
     }
 
-    return { r, g, b };
+    return {
+      r,
+      g,
+      b,
+      toRGBA: (alpha: number) => `rgba(${r}, ${g}, ${b}, ${alpha})`,
+    };
   }
   /**
    * We still accept parallax parameter for API consistency, but bubbles now stay in place
@@ -82,7 +92,8 @@ export default class BubbleRenderer {
 
     // Enhanced 3D bubble with gradient
     ctx.save();
-    ctx.globalAlpha = BUBBLE_ALPHA;
+    // We're using RGBA colors instead of globalAlpha for iPad compatibility
+    // ctx.globalAlpha = BUBBLE_ALPHA; - removing this line
 
     // Create radial gradient for 3D effect
     const gradientX = pxX - radius * 0.3;
@@ -99,12 +110,13 @@ export default class BubbleRenderer {
 
     // Extract base color components for gradient
     const baseColor = b.color || '#cccccc'; // Fallback color if undefined
+    const alpha = BUBBLE_ALPHA; // Use the alpha from constants
 
     // Add gradient stops for pastel cutesy 3D effect
-    gradient.addColorStop(0, '#ffffff'); // Bright highlight
-    gradient.addColorStop(0.1, this.pastelLighten(baseColor, 0.4)); // Pastel lighter shade
-    gradient.addColorStop(0.7, baseColor); // Main color
-    const edge = this.pastelDarken(baseColor, 0.15); // Subtle darker edge
+    gradient.addColorStop(0, `rgba(255, 255, 255, ${alpha})`); // Bright highlight with alpha
+    gradient.addColorStop(0.1, this.pastelLighten(baseColor, 0.4, alpha)); // Pastel lighter shade
+    gradient.addColorStop(0.7, this.extractRGB(baseColor).toRGBA(alpha)); // Main color with alpha
+    const edge = this.pastelDarken(baseColor, 0.15, alpha); // Subtle darker edge
     gradient.addColorStop(0.92, edge); // Actual ring
     gradient.addColorStop(1.0, 'rgba(0,0,0,0)'); // Transparent feathered edge
 
@@ -128,14 +140,15 @@ export default class BubbleRenderer {
     // Add two white reflection circles for a cutesy look
     // Main highlight
     ctx.beginPath();
-    ctx.globalAlpha = 0.3;
-    ctx.fillStyle = '#ffffff';
+    // Using RGBA instead of globalAlpha for iPad compatibility
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
     ctx.arc(pxX - radius * 0.43, pxY - radius * 0.49, radius * 0.2, 0, Math.PI * 2);
     ctx.fill();
 
     // Secondary smaller highlight (adds character)
     ctx.beginPath();
-    ctx.globalAlpha = 0.25;
+    // Using RGBA instead of globalAlpha for iPad compatibility
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
     ctx.arc(pxX - radius * 0.1, pxY - radius * 0.66, radius * 0.1, 0, Math.PI * 2);
     ctx.fill();
 
@@ -150,8 +163,10 @@ export default class BubbleRenderer {
 
     // Apply text opacity for fade effect
     ctx.save();
-    ctx.fillStyle = FONT_COLOUR;
-    ctx.globalAlpha = b.currentTextOpacity;
+    // Parse FONT_COLOUR and apply b.currentTextOpacity
+    const textRgb = this.extractRGB(FONT_COLOUR);
+    ctx.fillStyle = `rgba(${textRgb.r}, ${textRgb.g}, ${textRgb.b}, ${b.currentTextOpacity})`;
+    // Not using globalAlpha for iPad compatibility
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = `${labelSize}px ${FONT_FAMILY}`;
@@ -161,9 +176,10 @@ export default class BubbleRenderer {
     /* ---- white rim flash ---- */
     if (b.flashAlpha > 0) {
       ctx.save();
-      ctx.globalAlpha = b.flashAlpha * BUBBLE_FLASH_ALPHA;
+      // Using RGBA in strokeStyle instead of globalAlpha for iPad compatibility
+      const flashOpacity = b.flashAlpha * BUBBLE_FLASH_ALPHA;
       ctx.lineWidth = BUBBLE_STROKE_WIDTH;
-      ctx.strokeStyle = '#ffffff';
+      ctx.strokeStyle = `rgba(255, 255, 255, ${flashOpacity})`;
 
       // Add pastel glow effect to the stroke
       ctx.shadowColor = 'rgba(255, 235, 245, 0.9)';
