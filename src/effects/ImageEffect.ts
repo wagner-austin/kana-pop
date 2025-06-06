@@ -49,29 +49,23 @@ export class ImageEffect implements IBackgroundEffect {
       // Set the source URLs based on the input pattern
       if (isHorizontal) {
         // If source already specifies horizontal, derive the vertical path
-        this.imgHorizontal.src = src;
-        this.imgVertical.src = src.replace('horizontal', 'vertical');
+        this.imgHorizontal.src = this.getAdjustedPath(src);
+        this.imgVertical.src = this.getAdjustedPath(src.replace('horizontal', 'vertical'));
       } else if (isVertical) {
         // If source already specifies vertical, derive the horizontal path
-        this.imgVertical.src = src;
-        this.imgHorizontal.src = src.replace('vertical', 'horizontal');
+        this.imgVertical.src = this.getAdjustedPath(src);
+        this.imgHorizontal.src = this.getAdjustedPath(src.replace('vertical', 'horizontal'));
       } else {
         // If no orientation specified, try to load both variations
-        // Only for GitHub Pages deployment, we'll need to account for the base path
-        // Use relative paths for local development
-        if (window.location.hostname === 'wagner-austin.github.io' || 
-            window.location.hostname.includes('github.io')) {
-          // When on GitHub Pages
-          const baseUrl = '/kana-pop/';
-          const fullBasePath = basePath.startsWith('/') ? 
-            `${baseUrl}${basePath.substring(1)}` : `${baseUrl}${basePath}`;
-          this.imgHorizontal.src = `${fullBasePath}background_horizontal.png`;
-          this.imgVertical.src = `${fullBasePath}background_vertical.png`;
-        } else {
-          // Local development
-          this.imgHorizontal.src = `${basePath}background_horizontal.png`;
-          this.imgVertical.src = `${basePath}background_vertical.png`;
-        }
+        const horizontalPath = `${basePath}background_horizontal.png`;
+        const verticalPath = `${basePath}background_vertical.png`;
+
+        this.imgHorizontal.src = this.getAdjustedPath(horizontalPath);
+        this.imgVertical.src = this.getAdjustedPath(verticalPath);
+
+        ImageEffect.log.debug(
+          `Loading from: ${this.imgHorizontal.src} and ${this.imgVertical.src} (basePath: ${basePath})`,
+        );
       }
 
       ImageEffect.log.debug(
@@ -89,6 +83,44 @@ export class ImageEffect implements IBackgroundEffect {
   private updateReadyState() {
     // Consider ready if at least one image is loaded successfully
     this.ready = this.loadedHorizontal || this.loadedVertical;
+  }
+
+  /**
+   * Adjusts paths to work in both local development and GitHub Pages environments
+   * @param path The original path to adjust
+   * @returns The adjusted path that works in the current environment
+   */
+  private getAdjustedPath(path: string): string {
+    // If the path is already absolute (starts with http:// or https://), return it as is
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+
+    // Check if we're running on GitHub Pages
+    const isGitHubPages =
+      window.location.hostname === 'wagner-austin.github.io' ||
+      window.location.hostname.includes('github.io');
+
+    if (isGitHubPages) {
+      // For GitHub Pages, ensure we have the correct base path
+      const gitHubPagesBase = '/kana-pop/';
+
+      // If path already starts with the base, return it
+      if (path.startsWith(gitHubPagesBase)) {
+        return path;
+      }
+
+      // If path starts with a slash, append it to the base without the leading slash
+      if (path.startsWith('/')) {
+        return `${gitHubPagesBase}${path.substring(1)}`;
+      }
+
+      // Otherwise, just append the path to the base
+      return `${gitHubPagesBase}${path}`;
+    }
+
+    // For local development, return the path as is
+    return path;
   }
 
   update(_delta: number, ctx: CanvasRenderingContext2D): boolean {
