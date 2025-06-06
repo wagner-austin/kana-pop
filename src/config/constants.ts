@@ -1,6 +1,6 @@
 /** Pure static facts – no `window`, no services.  */
 export const SPAWN_INTERVAL = 1.2; // s
-export const BUBBLE_ALPHA = 0.6;
+export const BUBBLE_ALPHA = 0.36;
 
 // Colours come from JSON so designers can edit without code-changes.
 
