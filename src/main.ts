@@ -1,22 +1,26 @@
 import ResizeService from './services/ResizeService';
 import BackgroundManager from './core/BackgroundManager';
 import StateMachine from './core/StateMachine';
-import makeMenu from './screens/Menu';
-import makePlay from './screens/Play';
-import makeSettings from './screens/Settings';
-import makeLoading from './screens/Loading';
+import HomeScene from './scenes/HomeScene';
+import PlayScene from './scenes/PlayScene';
+import Theme from './services/ThemeService';
+import Loader from './services/AssetLoader';
+import Storage from './utils/StorageService';
 import Sound from './services/SoundService';
 
-const canvas = document.querySelector<HTMLCanvasElement>('#game');
+let sm: StateMachine | null = null;
+let bg: BackgroundManager | null = null;
 
-/* -------- background layer (one per app) -------------------------- */
-const bgCanvas = document.createElement('canvas');
-bgCanvas.id = 'bg';
-document.body.prepend(bgCanvas);
-const bg = new BackgroundManager(bgCanvas);
+// Get canvas references first but don't start rendering yet
+const canvas = document.querySelector<HTMLCanvasElement>('#game');
 if (!canvas) throw new Error('#game canvas not found');
 const ctx = canvas.getContext('2d');
 if (!ctx) throw new Error('2-D context not available');
+
+// Create background canvas but don't start rendering yet
+const bgCanvas = document.createElement('canvas');
+bgCanvas.id = 'bg';
+document.body.prepend(bgCanvas);
 
 /* ------------------------------------------------------------------
  *  Polyfill: keep CSS var --app-height equal to window.innerHeight.
@@ -34,24 +38,39 @@ window.addEventListener('resize', setAppHeight); // orientationchange → resize
 Sound.armFirstGesture(window);
 ResizeService.watchCanvas(canvas);
 
-const sm = new StateMachine();
-sm.add('loading', makeLoading('menu', sm, ctx))
-  .add('menu', makeMenu(sm, ctx))
-  .add('settings', makeSettings(sm, ctx))
-  .add('play', makePlay(ctx));
-/* start at the loader */
-sm.change('loading');
+(async () => {
+  // Load all resources and initialize everything before starting any rendering
+  /* 1 - theme first */
+  const themePath = Storage.get('kanaPop.theme') ?? 'assets/themes/pastel-pond/';
+  await Theme.load(themePath);
+
+  /* 2 - initialize scenes */
+  sm = new StateMachine();
+  sm.add('home', new HomeScene(sm, ctx)).add('play', new PlayScene(sm, ctx));
+
+  /* 3 - initialize background manager ONLY after theme is loaded */
+  bg = new BackgroundManager(bgCanvas);
+
+  /* 4 - change to home scene */
+  await sm.change('home'); // draw “Tap to Start” immediately
+
+  /* 5 - kick off (non-blocking) asset load */
+  Loader.run(() => {}).catch(console.error); // no visual progress bar
+
+  /* 6 - NOW start the game loop - everything is ready */
+  last = performance.now();
+  raf = requestAnimationFrame(loop);
+})();
 
 let raf = 0;
 let last = performance.now();
 function loop(now: number) {
   const dt = (now - last) / 1000;
   last = now;
-  bg.paint(dt); // ① draw background first
-  sm.update(dt); // ② active scene paints on #game canvas(loop);
+  bg?.paint(dt); // ① draw background first
+  sm?.update(dt); // ② active scene paints on #game canvas
   raf = requestAnimationFrame(loop);
 }
-raf = requestAnimationFrame(loop);
 
 // Suspend when page is hidden (saves battery on iOS)
 document.addEventListener('visibilitychange', () => {
@@ -60,4 +79,13 @@ document.addEventListener('visibilitychange', () => {
     last = performance.now();
     raf = requestAnimationFrame(loop);
   }
+});
+
+document.addEventListener('scenechange', (e) => {
+  const { nextScene } = (e as CustomEvent).detail;
+  if (sm) {
+    sm.change(nextScene);
+  }
+  last = performance.now(); // reset last to avoid a giant dt
+  raf = requestAnimationFrame(loop);
 });

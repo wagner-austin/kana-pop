@@ -8,11 +8,11 @@ export function dpr(canvas: HTMLCanvasElement) {
 }
 
 export function getWindowDpr(): number {
-  return window.devicePixelRatio || 1;
+  return window.devicePixelRatio || 1; // just ask the browser each time
 }
 
 export function applyDprTransform(ctx: CanvasRenderingContext2D) {
   const dpr = getWindowDpr();
-  ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform to identity
-  ctx.scale(dpr, dpr);
+  ctx.setTransform(1, 0, 0, 1, 0, 0); // reset any prior scaling
+  ctx.scale(dpr, dpr); // draw at device-pixel accuracy
 }

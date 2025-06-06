@@ -56,6 +56,7 @@ class ResizeService {
   private attachWindowListeners(): void {
     if (typeof window !== 'undefined') {
       window.addEventListener('resize', this.boundTrigger);
+      /* we ignore visualViewport changes – page zoom shouldn't resize the canvas */
       this.addDprListener();
     }
   }

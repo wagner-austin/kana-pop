@@ -2,7 +2,7 @@ import { cssSize, getWindowDpr } from '../utils/canvasMetrics';
 
 /** @internal - do not import outside ResizeService */
 export default function resizeCanvas(canvas: HTMLCanvasElement) {
-  const dpr = getWindowDpr();
+  const dpr = getWindowDpr(); // current DPR each call
   const { w, h } = cssSize(canvas);
 
   canvas.width = Math.round(w * dpr);

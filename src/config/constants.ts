@@ -23,7 +23,15 @@ export const TEXT_COLOUR_DARK = '#222';
 export const FONT_FAMILY = 'Noto Sans JP, sans-serif';
 export const FONT_COLOUR = TEXT_COLOUR_DARK;
 
-export const KANA_FONT_RATIO = 0.7;
+/* --- bubble and text size constants ---------------------------------- */
+/** Bubble size as a fraction of the smallest screen dimension */
+export const BUBBLE_SIZE_RATIO = 0.08;
+
+/** Kana text size as a fraction of bubble radius */
+export const KANA_FONT_RATIO = 0.8;
+
+/** Romaji text size as a fraction of bubble radius */
+export const ROMAJI_FONT_RATIO = 0.55;
 
 /** Minimum seconds between successive pronunciations of the *same* bubble */
 export const AUDIO_COOLDOWN = 0.4;
@@ -32,10 +40,22 @@ export const AUDIO_COOLDOWN = 0.4;
 export const HAPTIC_DURATION_MS = 50; // increased from 15ms for better Android feedback
 
 /* --- tap-feedback motion constants ------------------------------------ */
-export const BUBBLE_TAP_SCALE = 0.85; // peak scale multiplier (shrinks on tap)
-export const BUBBLE_FLASH_DURATION = 0.15; // seconds the rim flash lasts
+/** Bubble tap "spring" animation timing (seconds) */
+export const BUBBLE_SQUASH_TIME = 0.08; // time to shrink (squash)
+export const BUBBLE_STRETCH_TIME = 0.1; // time to overshoot (stretch)
+export const BUBBLE_SETTLE_TIME = 0.14; // time to settle at 1
+export const BUBBLE_SQUASH_SCALE = 0.85; // min scale when squashed
+export const BUBBLE_STRETCH_SCALE = 1.2; // max scale when stretched
+
+export const BUBBLE_FLASH_DURATION = 0.0; // seconds the rim flash lasts
+
+/* --- text fade transition constants ---------------------------------- */
+export const TEXT_FADE_DURATION = 0.15; // seconds for text fade transition
 export const BUBBLE_FLASH_ALPHA = 0.6; // starting opacity of the rim
 export const BUBBLE_STROKE_WIDTH = 4; // css-px width of the rim stroke
+
+/** How aggressively a bubble's scale eases back to 1 ( units ≈ 1/seconds ) - legacy */
+export const BUBBLE_SCALE_EASE_RATE = 5;
 
 /* ---- Environment ---------------------------------------------------- */
 export const IS_DEV = import.meta.env.DEV;
@@ -47,3 +67,8 @@ export const DEBUG_ELEMENT_ID_PREFIX = '__kanaPopDebug_'; // Prefix for debug el
 
 /* ---- Haptic Feedback Patterns --------------------------------------- */
 export const HAPTIC_PULSE_GAP_MS = 40; // ms, gap for pulse patterns
+export const HAPTIC_THROTTLE_MS_SINGLE = 60; // ms, min time between single haptic pulses
+export const HAPTIC_THROTTLE_MS_PATTERN = 250; // ms, min time between haptic patterns
+
+/** user-pref default (overridden by StorageService key 'kanaPop.haptics') */
+export const HAPTICS_DEFAULT_ENABLED = true;

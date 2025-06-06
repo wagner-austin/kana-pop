@@ -3,8 +3,9 @@ import {
   FONT_FAMILY,
   FONT_COLOUR,
   KANA_FONT_RATIO,
-  BUBBLE_STROKE_WIDTH,
+  ROMAJI_FONT_RATIO,
   BUBBLE_FLASH_ALPHA,
+  BUBBLE_STROKE_WIDTH,
 } from '../config/constants';
 
 import type Bubble from '@/entities/Bubble';
@@ -24,26 +25,38 @@ export default class BubbleRenderer {
     // No parallax shifting applied to bubbles - they stay in place
     const pxX = b.x * w;
     const pxY = b.y * h;
-    const r = b.r * b.scale; // ← squash / stretch
+    // Use the unified scale for a uniform bubble squish animation
+    const radius = b.r * b.scale; // scaled radius
 
     // circle
     ctx.save();
     ctx.globalAlpha = BUBBLE_ALPHA;
     ctx.fillStyle = b.color;
     ctx.beginPath();
-    ctx.arc(pxX, pxY, r, 0, Math.PI * 2);
+
+    // Draw circle with the scaled radius
+    ctx.beginPath();
+    ctx.arc(pxX, pxY, radius, 0, Math.PI * 2);
+
     ctx.fill();
     ctx.restore();
 
-    /* ---- kana glyph ---- */
+    /* ---- kana/romaji text with fade transition ---- */
     const label = b.showingRomaji ? b.romaji : b.glyph;
-    const ratio = b.showingRomaji ? 0.45 : KANA_FONT_RATIO;
+    const ratio = b.showingRomaji ? ROMAJI_FONT_RATIO : KANA_FONT_RATIO;
 
+    // Use the text-specific scale factor
+    const labelSize = Math.round(b.r * b.currentTextScale * ratio);
+
+    // Apply text opacity for fade effect
+    ctx.save();
     ctx.fillStyle = FONT_COLOUR;
+    ctx.globalAlpha = b.currentTextOpacity;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = `${Math.round(r * ratio)}px ${FONT_FAMILY}`;
+    ctx.font = `${labelSize}px ${FONT_FAMILY}`;
     ctx.fillText(label, pxX, pxY);
+    ctx.restore();
 
     /* ---- white rim flash ---- */
     if (b.flashAlpha > 0) {
@@ -52,8 +65,10 @@ export default class BubbleRenderer {
       ctx.lineWidth = BUBBLE_STROKE_WIDTH;
       ctx.strokeStyle = '#ffffff';
 
+      // Draw circular stroke with the scaled radius
       ctx.beginPath();
-      ctx.arc(pxX, pxY, r + BUBBLE_STROKE_WIDTH * 0.5, 0, Math.PI * 2);
+      ctx.arc(pxX, pxY, radius + BUBBLE_STROKE_WIDTH * 0.5, 0, Math.PI * 2);
+
       ctx.stroke();
       ctx.restore();
     }

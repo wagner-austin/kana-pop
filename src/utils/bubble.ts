@@ -1,4 +1,9 @@
-// Runtime helpers kept out of the constants layer.
-export function bubbleRadius(cssWidth: number, cssHeight: number): number {
-  return Math.min(cssWidth, cssHeight) * 0.06;
+import { BUBBLE_SIZE_RATIO } from '../config/constants';
+
+/**
+ * Calculate bubble radius based on screen dimensions
+ * Using the centralized BUBBLE_SIZE_RATIO constant
+ */
+export function bubbleRadius(cssW: number, cssH: number): number {
+  return Math.min(cssW, cssH) * BUBBLE_SIZE_RATIO;
 }

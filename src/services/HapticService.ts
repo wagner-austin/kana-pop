@@ -1,16 +1,26 @@
 /* Enhanced wrapper around the Vibration API with better mobile support.
    Falls back gracefully, respects user accessibility prefs, and provides better feedback. */
 
-import { IS_DEV, HAPTIC_PULSE_GAP_MS, DEBUG_ELEMENT_ID_PREFIX } from '@/config/constants';
+import PATTERNS, { type HapticPatternName } from './HapticPatterns';
+
+import {
+  IS_DEV,
+  HAPTIC_PULSE_GAP_MS,
+  DEBUG_ELEMENT_ID_PREFIX,
+  HAPTICS_DEFAULT_ENABLED,
+  HAPTIC_DURATION_MS, // Corrected from HAPTIC_MIN_DURATION_MS
+  HAPTIC_THROTTLE_MS_SINGLE,
+  HAPTIC_THROTTLE_MS_PATTERN,
+} from '@/config/constants';
+import StorageService from '@/utils/StorageService';
 import Logger from '@/utils/Logger';
 
 const log = new Logger('Haptics');
 
 export class HapticService {
-  private enabled = false;
+  private enabled = StorageService.get('kanaPop.haptics') !== 'false' && HAPTICS_DEFAULT_ENABLED;
   private debugElement: HTMLElement | null = null;
-  private lastVibration = 0;
-  private isIOS = false;
+  private lastVibration = 0; // used only for normal throttle, no more “fake” initial value
   /** null = unknown; true = navigator.vibrate() accepted an array; false = array was rejected */
   private patternArraysOkay: boolean | null = null;
 
@@ -18,16 +28,6 @@ export class HapticService {
     /* Skip initialization in SSR environments */
     if (typeof window === 'undefined' || typeof navigator === 'undefined') {
       return;
-    }
-
-    // Detect iOS / iPadOS – spec: Vibration API is unsupported
-    this.isIOS =
-      /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-    if (this.isIOS) {
-      log.info('iOS detected – Vibration API unsupported; Haptics disabled.');
-      return; // Leave .enabled = false
     }
 
     /* Honour "prefers-reduced-motion: reduce" early. */
@@ -48,43 +48,15 @@ export class HapticService {
         this.updateDebugStatus('Initialized');
       }
 
-      // Test vibration on init to improve chances of working later
-      // (Some mobile browsers require user interaction first)
-      // Add listener for both touchstart and click to better handle activation
+      /* One-shot gesture: resume AudioContext – **no vibration here** */
       const activateHaptics = () => {
-        if (this.lastVibration === 0) {
-          // Initialize with a clear, safe vibration pattern that works on both platforms
-          // We use a direct call to navigator.vibrate to avoid our own throttle
-          if (this.isIOS) {
-            // iOS works better with a single longer vibration
-            navigator.vibrate(100);
-            this.updateDebugStatus('iOS vibration activated');
-          } else {
-            // Android Chrome requires a direct vibration without starting with 0ms
-            // Try direct pattern first, then fall back to simpler approach if needed
-            try {
-              navigator.vibrate(100);
-              this.updateDebugStatus('Android vibration activated (simple)');
-            } catch {
-              // Fall back to alternative pattern if direct vibration fails
-              try {
-                navigator.vibrate([100, 50, 100]);
-                this.updateDebugStatus('Android vibration activated (pattern)');
-              } catch (e2) {
-                log.warn('Vibration activation failed:', e2);
-                this.updateDebugStatus('Activation failed');
-              }
-            }
-          }
-
-          // Special handling of lastVibration for initialization:
-          // Set it to a past time to allow immediate vibrations after this
-          this.lastVibration = Date.now() - 400; // This allows another vibration immediately after
-        }
+        this.updateDebugStatus('Activation gesture received (resume only)');
       };
 
-      document.addEventListener('touchstart', activateHaptics, { once: true });
-      document.addEventListener('click', activateHaptics, { once: true });
+      window.addEventListener('pointerdown', activateHaptics, {
+        once: true,
+        passive: true,
+      });
     } else {
       log.info('Haptic feedback not supported on this device.');
       if (IS_DEV) {
@@ -108,73 +80,107 @@ export class HapticService {
    * @param intensity - Intensity level (1=subtle, 2=medium, 3=strong)
    * @returns boolean indicating if vibration was attempted
    */
-  vibrate(pattern: number | number[] = 50, intensity: 1 | 2 | 3 = 2): boolean {
-    if (!this.enabled) return false;
+  async vibrate(pattern: number | number[] = 50, intensity: 1 | 2 | 3 = 2): Promise<boolean> {
+    if (!this.enabled) return Promise.resolve(false);
 
-    /* ── 1. Probe once per page-load ──────────────────────────────── */
+    // Probe for array pattern support once per page-load if not already determined
     if (this.patternArraysOkay === null) {
-      // Use a 2-element array; engines that only support single pulses will reject it.
-      this.patternArraysOkay = navigator.vibrate([1, 1]);
-      // The probe itself consumes the first user-activation: bail out early.
-      if (!this.patternArraysOkay) {
-        this.updateDebugStatus('Array patterns rejected – collapsing to single pulses');
-        return false;
+      try {
+        // Try a minimal array pattern. navigator.vibrate returns true if successful, false otherwise.
+        // Some browsers might throw an error for unsupported patterns.
+        if (navigator.vibrate([1, 1])) {
+          // Attempt vibration
+          navigator.vibrate(0); // Stop it immediately if it started
+          this.patternArraysOkay = true;
+          this.updateDebugStatus('Array patterns seem supported.');
+        } else {
+          this.patternArraysOkay = false;
+          this.updateDebugStatus('Array patterns rejected (vibrate returned false).');
+        }
+      } catch (e) {
+        this.patternArraysOkay = false;
+        this.updateDebugStatus(
+          `Array patterns rejected (vibrate threw error: ${e instanceof Error ? e.message : String(e)}).`,
+        );
       }
-      // If we get here the array was accepted; continue into normal haptics.
+      // The probe might consume the first user gesture if it's the first call.
+      // We don't bail out here, subsequent logic will handle throttling.
     }
 
-    // Less restrictive throttle for Android to ensure initial vibrations work
-    // This helps when the first vibration might be blocked
     const now = Date.now();
-    const minGap = 200; // Enough to feel discrete taps, platform-agnostic
-    if (now - this.lastVibration < minGap) return false;
+    const basePatternIsArray = Array.isArray(pattern);
+    const minGap = basePatternIsArray ? HAPTIC_THROTTLE_MS_PATTERN : HAPTIC_THROTTLE_MS_SINGLE;
+
+    if (now - this.lastVibration < minGap) {
+      this.updateDebugStatus(`Throttled (gap: ${minGap}ms)`);
+      return Promise.resolve(false);
+    }
+
+    let actualVibration: number | number[];
+
+    if (basePatternIsArray) {
+      // Pattern is an array (e.g., from a named pattern)
+      actualVibration = (pattern as number[]).map((p) => Math.max(p, HAPTIC_DURATION_MS));
+      if (!this.patternArraysOkay && actualVibration.length > 0) {
+        // Collapse to a single pulse (max value) if arrays are not supported
+        actualVibration = Math.max(...actualVibration, HAPTIC_DURATION_MS);
+        this.updateDebugStatus('Collapsed array to single max pulse for compatibility.');
+      }
+    } else {
+      // Pattern is a single number (direct duration)
+      const p = Math.max(pattern as number, HAPTIC_DURATION_MS);
+      const pulseGap = HAPTIC_PULSE_GAP_MS;
+
+      switch (intensity) {
+        case 1: // Subtle
+          actualVibration = p;
+          break;
+        case 2: // Medium
+          actualVibration = Math.min(p * 1.5, 150); // Cap at 150ms for better compatibility
+          break;
+        case 3: // Strong
+          // Use a pattern for strong vibration if arrays are okay, otherwise a longer single pulse
+          actualVibration = this.patternArraysOkay ? [p, pulseGap, p] : p * 2;
+          break;
+        default: // Should not happen due to type signature (intensity is 1 | 2 | 3)
+          log.warn(`Invalid intensity: ${intensity} for numeric pattern.`);
+          return Promise.resolve(false);
+      }
+    }
 
     try {
-      let actual: number | number[] = pattern;
-
-      // Convert single-number request into a pattern/intensity pulse
-      if (!Array.isArray(pattern)) {
-        // Enforce minimum duration of 50ms for better hardware compatibility
-        const p = Math.max(pattern, 50);
-        const gap = HAPTIC_PULSE_GAP_MS;
-
-        if (this.isIOS) {
-          // iOS works better with a single longer vibration
-          actual = intensity === 3 ? p * 2 : p * 1.5;
-        } else {
-          // Android Chrome works better with simple patterns
-          // Recent Chrome versions may ignore complex patterns
-          switch (intensity) {
-            case 1: // Subtle
-              actual = p;
-              break;
-            case 2: // Medium
-              // Use a single longer vibration for better compatibility
-              actual = Math.min(p * 1.5, 150); // Cap at 150ms for better compatibility
-              break;
-            case 3: // Strong
-              // Strong = two pulses unless arrays are disallowed
-              actual = this.patternArraysOkay ? [p, gap, p] : p * 2;
-              break;
-          }
-        }
+      // Ensure actualVibration is not an empty array if it somehow became one.
+      if (Array.isArray(actualVibration) && actualVibration.length === 0) {
+        log.warn('Attempted to vibrate with an empty pattern array.');
+        return Promise.resolve(false);
+      }
+      // Also ensure single number vibrations are not zero if they became so.
+      if (typeof actualVibration === 'number' && actualVibration === 0 && pattern !== 0) {
+        // allow explicit vibrate(0) to cancel
+        log.warn('Calculated vibration duration is zero, skipping.');
+        return Promise.resolve(false);
       }
 
-      // If the browser rejected arrays during the probe, collapse any we built
-      if (!this.patternArraysOkay && Array.isArray(actual)) {
-        actual = Math.max(...actual);
+      const success = navigator.vibrate(actualVibration);
+      if (success) {
+        this.lastVibration = now;
+        this.updateDebugStatus(`Vibrated: ${JSON.stringify(actualVibration)}`);
+        log.info('Vibrating with:', { originalPattern: pattern, intensity, actualVibration });
+        return Promise.resolve(true);
+      } else {
+        this.updateDebugStatus('navigator.vibrate() returned false.');
+        log.warn('navigator.vibrate() returned false for pattern:', actualVibration);
+        return Promise.resolve(false);
       }
-
-      const ok = navigator.vibrate(actual);
-      this.updateDebugStatus(
-        ok ? `Vibrated: ${JSON.stringify(actual)}` : 'navigator.vibrate() returned false',
-      );
-      if (ok) this.lastVibration = now;
-      return ok;
     } catch (e) {
-      console.warn('Vibration failed:', e);
-      this.updateDebugStatus(`Failed: ${e}`);
-      return false;
+      log.warn('Vibration failed with error:', e);
+      this.updateDebugStatus(`Failed: ${e instanceof Error ? e.message : String(e)}`);
+      // If it failed and we thought arrays were okay, maybe they aren't (though probe should catch most).
+      if (Array.isArray(actualVibration) && this.patternArraysOkay) {
+        this.patternArraysOkay = false; // Re-evaluate on next attempt or mark as not okay
+        this.updateDebugStatus('Error with array vibration, marked arrays as not okay for future.');
+      }
+      return Promise.resolve(false);
     }
   }
 
@@ -207,6 +213,27 @@ export class HapticService {
     if (this.debugElement) {
       this.debugElement.textContent = `Haptics: ${message}`;
     }
+  }
+
+  /** fire a named recipe defined in HapticPatterns.ts */
+  vibratePattern(name: HapticPatternName): Promise<boolean> {
+    const recipe = PATTERNS[name];
+    if (typeof recipe === 'number') {
+      return this.vibrate(recipe);
+    } else {
+      return this.vibrate([...recipe]); // Create a new mutable array from readonly
+    }
+  }
+
+  /** runtime toggle used by Settings UI */
+  setEnabled(on: boolean) {
+    this.enabled = on;
+    StorageService.set('kanaPop.haptics', String(on));
+    if (!on) navigator.vibrate(0); // cancel any running pattern
+  }
+
+  isEnabled(): boolean {
+    return this.enabled;
   }
 }
 
