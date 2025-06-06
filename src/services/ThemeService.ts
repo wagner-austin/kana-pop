@@ -1,9 +1,17 @@
 import type { IBackgroundEffect } from '@/effects/IBackgroundEffect';
 import { ImageEffect } from '@/effects/ImageEffect';
-import { CssEffect } from '@/effects/CssEffect';
 import { VideoEffect } from '@/effects/VideoEffect';
 import { ShaderEffect } from '@/effects/ShaderEffect';
+import { CssEffect } from '@/effects/CssEffect';
 import { setThemePalette } from '@/config/constants';
+
+// Use import.meta.glob to make Vite aware of all possible theme assets
+// Eagerly load them and get their default export (the URL string due to '?url')
+const THEME_ASSET_URLS = import.meta.glob('../assets/themes/*/*.*', {
+  query: '?url',
+  eager: true,
+  import: 'default',
+}) as Record<string, string>;
 
 // Helper for test/SSR environments where assets might not be available
 class NoopEffect implements IBackgroundEffect {
@@ -22,7 +30,7 @@ export interface Theme {
 }
 
 type EffectCfg =
-  | { type: 'image'; file: string }
+  | { type: 'image'; horizontal: string; vertical: string }
   | { type: 'video'; file: string }
   | { type: 'script'; file: string; export: string }
   | { type: 'shader'; shader: string }
@@ -44,11 +52,6 @@ const PALETTES = import.meta.glob(
   '../assets/themes/**/palette.json', // Relative to src/services/, pointing to src/assets/themes/
   { query: '?json', eager: true },
 ) as Record<string, string[]>;
-
-function withBase(url: string) {
-  const base = import.meta.env.BASE_URL; // '/kana-pop/' in prod
-  return base ? base + url.replace(/^\/+/, '') : url;
-}
 
 class ThemeService {
   private current!: Theme;
@@ -94,47 +97,53 @@ class ThemeService {
 
   /* ── helpers ──────────────────────────────────────────────── */
   private async makeEffect(cfg: EffectCfg, manifestDir: string): Promise<IBackgroundEffect> {
-    // 1. strip the leading `assets/themes/`
-    // 2. strip ONE trailing slash (if present)
+    // Normalize theme folder (strip src/assets/themes and trailing slash)
     const themeFolder = manifestDir.replace(/^assets\/themes\//, '').replace(/\/$/, '');
+    // Helper to resolve any asset URL using the pre-globbed THEME_ASSET_URLS map
+    function viteAssetUrl(file: string): string {
+      // No longer async
+      const pathKey = `../assets/themes/${themeFolder}/${file}`;
+      const url = THEME_ASSET_URLS[pathKey];
+
+      if (url === undefined) {
+        console.error(`[ThemeService] Asset URL not found for key: ${pathKey}`);
+        console.error(
+          '[ThemeService] Attempted to load file:',
+          file,
+          'from theme folder:',
+          themeFolder,
+        );
+        console.error('[ThemeService] Available keys from glob:', Object.keys(THEME_ASSET_URLS));
+        throw new Error(
+          `Asset URL not found by viteAssetUrl: ${pathKey}. Check theme.json and asset paths.`,
+        );
+      }
+      return url;
+    }
 
     if (cfg.type === 'image') {
       if (import.meta.env.VITEST) {
-        console.warn(`[ThemeService] VITEST env: Using NoopEffect for image ${cfg.file}`);
+        console.warn(`[ThemeService] VITEST env: Using NoopEffect for image backgrounds`);
         return new NoopEffect();
       }
-      // `new URL()` needs a path relative to the *current* file (ThemeService.ts),
-      // so we build one that walks from src/services/ up to src/ and then into assets/themes/
-      const relativePath = `../${manifestDir}${cfg.file}`;
-      const imageUrl = new URL(relativePath, import.meta.url).href;
-      return new ImageEffect(imageUrl);
+      const horizontalUrl = viteAssetUrl(cfg.horizontal);
+      const verticalUrl = viteAssetUrl(cfg.vertical);
+      return new ImageEffect({ horizontal: horizontalUrl, vertical: verticalUrl });
     } else if (cfg.type === 'video') {
       if (import.meta.env.VITEST) {
         console.warn(`[ThemeService] VITEST env: Using NoopEffect for video ${cfg.file}`);
         return new NoopEffect();
       }
-      const videoUrl = new URL(`../${manifestDir}${cfg.file}`, import.meta.url).href;
-      try {
-        // For videos, assume they are also in src/assets/themes and use ?url import
-        return new VideoEffect(videoUrl);
-      } catch (error) {
-        console.warn(
-          `ThemeService: Failed to import video asset "${cfg.file}" with ?url. Error:`,
-          error,
-        );
-        const fallbackUrl = withBase(`assets/themes/${themeFolder}/${cfg.file}`);
-        console.warn(`ThemeService: Falling back to unhashed path for video: "${fallbackUrl}"`);
-        return new VideoEffect(fallbackUrl);
-      }
+      const videoUrl = viteAssetUrl(cfg.file);
+      return new VideoEffect(videoUrl);
     } else if (cfg.type === 'script') {
       try {
-        // Scripts are imported directly. Path relative to project root / Vite's resolution.
-        // Assuming scripts are located within src/assets/themes/
+        // (This assumes your scripts are already ESM, otherwise adapt as needed)
         const scriptPath = `/src/assets/themes/${themeFolder}/${cfg.file}`;
-        const mod = await import(/* @vite-ignore */ scriptPath); // Use vite-ignore if path is truly dynamic
+        const mod = await import(/* @vite-ignore */ scriptPath);
         const Ctor = mod[cfg.export];
         if (typeof Ctor === 'function') {
-          return new Ctor(manifestDir); // manifestDir is like 'assets/themes/pastel-pond/'
+          return new Ctor(manifestDir);
         } else {
           throw new Error(`Export "${cfg.export}" from script "${cfg.file}" is not a constructor.`);
         }
@@ -143,13 +152,10 @@ class ThemeService {
         throw error;
       }
     } else if (cfg.type === 'shader') {
-      // Shaders are defined directly in theme.json, not as files
       return new ShaderEffect(cfg.shader);
     } else if (cfg.type === 'css') {
       return new CssEffect(cfg.class);
     } else {
-      // This will cause a TypeScript error if any cfg.type is not handled,
-      // ensuring all types in EffectCfg are covered.
       const _exhaustiveCheck: never = cfg;
       throw new Error(`ThemeService: unknown effect type: ${JSON.stringify(_exhaustiveCheck)}`);
     }

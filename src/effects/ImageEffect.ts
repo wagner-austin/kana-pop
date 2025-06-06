@@ -9,21 +9,11 @@ export class ImageEffect implements IBackgroundEffect {
   private loadedHorizontal = false;
   private loadedVertical = false;
 
-  constructor(src: string) {
+  constructor(urls: { horizontal: string; vertical: string }) {
     if (typeof window !== 'undefined') {
-      // Extract the base path from the source
-      const lastSlashIndex = src.lastIndexOf('/');
-      const basePath = lastSlashIndex !== -1 ? src.substring(0, lastSlashIndex + 1) : '';
-      const fileName = lastSlashIndex !== -1 ? src.substring(lastSlashIndex + 1) : src;
-
-      // Check if the provided source already specifies horizontal or vertical
-      const isHorizontal = fileName.includes('horizontal');
-      const isVertical = fileName.includes('vertical');
-
-      // Load horizontal image
       this.imgHorizontal = new Image();
       this.imgHorizontal.onload = () => {
-        ImageEffect.log.debug(`Loaded horizontal: ${this.imgHorizontal?.src}`);
+        ImageEffect.log.debug(`Loaded horizontal image: ${this.imgHorizontal?.src}`);
         this.loadedHorizontal = true;
         this.updateReadyState();
       };
@@ -32,11 +22,11 @@ export class ImageEffect implements IBackgroundEffect {
         ImageEffect.log.error(`Failed to load horizontal image: ${this.imgHorizontal?.src}`);
         this.updateReadyState();
       };
+      this.imgHorizontal.src = urls.horizontal;
 
-      // Load vertical image
       this.imgVertical = new Image();
       this.imgVertical.onload = () => {
-        ImageEffect.log.debug(`Loaded vertical: ${this.imgVertical?.src}`);
+        ImageEffect.log.debug(`Loaded vertical image: ${this.imgVertical?.src}`);
         this.loadedVertical = true;
         this.updateReadyState();
       };
@@ -45,82 +35,16 @@ export class ImageEffect implements IBackgroundEffect {
         ImageEffect.log.error(`Failed to load vertical image: ${this.imgVertical?.src}`);
         this.updateReadyState();
       };
-
-      // Set the source URLs based on the input pattern
-      if (isHorizontal) {
-        // If source already specifies horizontal, derive the vertical path
-        this.imgHorizontal.src = this.getAdjustedPath(src);
-        this.imgVertical.src = this.getAdjustedPath(src.replace('horizontal', 'vertical'));
-      } else if (isVertical) {
-        // If source already specifies vertical, derive the horizontal path
-        this.imgVertical.src = this.getAdjustedPath(src);
-        this.imgHorizontal.src = this.getAdjustedPath(src.replace('vertical', 'horizontal'));
-      } else {
-        // If no orientation specified, try to load both variations
-        const horizontalPath = `${basePath}background_horizontal.png`;
-        const verticalPath = `${basePath}background_vertical.png`;
-
-        this.imgHorizontal.src = this.getAdjustedPath(horizontalPath);
-        this.imgVertical.src = this.getAdjustedPath(verticalPath);
-
-        ImageEffect.log.debug(
-          `Loading from: ${this.imgHorizontal.src} and ${this.imgVertical.src} (basePath: ${basePath})`,
-        );
-      }
-
-      ImageEffect.log.debug(
-        `Loading images from: ${this.imgHorizontal.src} and ${this.imgVertical.src}`,
-      );
+      this.imgVertical.src = urls.vertical;
     } else {
-      // In Node.js or other non-browser environments, mark as ready but do nothing.
-      // This prevents errors but means the effect won't render.
       this.ready = true;
     }
   }
 
-  resize() {} // nothing to do
-
+  resize() {}
   private updateReadyState() {
-    // Consider ready if at least one image is loaded successfully
+    // Ready if at least one is loaded
     this.ready = this.loadedHorizontal || this.loadedVertical;
-  }
-
-  /**
-   * Adjusts paths to work in both local development and GitHub Pages environments
-   * @param path The original path to adjust
-   * @returns The adjusted path that works in the current environment
-   */
-  private getAdjustedPath(path: string): string {
-    // If the path is already absolute (starts with http:// or https://), return it as is
-    if (path.startsWith('http://') || path.startsWith('https://')) {
-      return path;
-    }
-
-    // Check if we're running on GitHub Pages
-    const isGitHubPages =
-      window.location.hostname === 'wagner-austin.github.io' ||
-      window.location.hostname.includes('github.io');
-
-    if (isGitHubPages) {
-      // For GitHub Pages, ensure we have the correct base path
-      const gitHubPagesBase = '/kana-pop/';
-
-      // If path already starts with the base, return it
-      if (path.startsWith(gitHubPagesBase)) {
-        return path;
-      }
-
-      // If path starts with a slash, append it to the base without the leading slash
-      if (path.startsWith('/')) {
-        return `${gitHubPagesBase}${path.substring(1)}`;
-      }
-
-      // Otherwise, just append the path to the base
-      return `${gitHubPagesBase}${path}`;
-    }
-
-    // For local development, return the path as is
-    return path;
   }
 
   update(_delta: number, ctx: CanvasRenderingContext2D): boolean {
@@ -137,10 +61,8 @@ export class ImageEffect implements IBackgroundEffect {
     // Choose the appropriate image based on screen orientation
     let img = null;
     if (aspectRatio >= 1) {
-      // Landscape/horizontal orientation
       img = this.loadedHorizontal ? this.imgHorizontal : this.imgVertical;
     } else {
-      // Portrait/vertical orientation
       img = this.loadedVertical ? this.imgVertical : this.imgHorizontal;
     }
 

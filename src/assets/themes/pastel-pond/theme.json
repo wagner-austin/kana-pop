@@ -1,5 +1,9 @@
 {
   "name": "Pastel Pond",
-  "assets": { "palette": "palette.json", "background": "background.jpg" },
-  "effect": { "type": "image", "file": "background.png" }
+  "assets": { "palette": "palette.json" },
+  "effect": {
+    "type": "image",
+    "horizontal": "background_horizontal.png",
+    "vertical": "background_vertical.png"
+  }
 }

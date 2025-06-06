@@ -25,13 +25,13 @@ export const FONT_COLOUR = TEXT_COLOUR_DARK;
 
 /* --- bubble and text size constants ---------------------------------- */
 /** Bubble size as a fraction of the smallest screen dimension */
-export const BUBBLE_SIZE_RATIO = 0.08;
+export const BUBBLE_SIZE_RATIO = 0.10;
 
 /** Kana text size as a fraction of bubble radius */
-export const KANA_FONT_RATIO = 0.8;
+export const KANA_FONT_RATIO = 0.85;
 
 /** Romaji text size as a fraction of bubble radius */
-export const ROMAJI_FONT_RATIO = 0.55;
+export const ROMAJI_FONT_RATIO = 0.60;
 
 /** Minimum seconds between successive pronunciations of the *same* bubble */
 export const AUDIO_COOLDOWN = 0.4;
