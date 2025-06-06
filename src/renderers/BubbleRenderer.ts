@@ -112,11 +112,18 @@ export default class BubbleRenderer {
     const baseColor = b.color || '#cccccc'; // Fallback color if undefined
     const alpha = BUBBLE_ALPHA; // Use the alpha from constants
 
+    // Make sure we're using the correct color format
+    let processedColor = baseColor;
+    // If the color is a hex color but doesn't start with #, add it
+    if (!baseColor.startsWith('#') && !baseColor.startsWith('rgb')) {
+      processedColor = '#' + baseColor;
+    }
+
     // Add gradient stops for pastel cutesy 3D effect
     gradient.addColorStop(0, `rgba(255, 255, 255, ${alpha})`); // Bright highlight with alpha
-    gradient.addColorStop(0.1, this.pastelLighten(baseColor, 0.4, alpha)); // Pastel lighter shade
-    gradient.addColorStop(0.7, this.extractRGB(baseColor).toRGBA(alpha)); // Main color with alpha
-    const edge = this.pastelDarken(baseColor, 0.15, alpha); // Subtle darker edge
+    gradient.addColorStop(0.1, this.pastelLighten(processedColor, 0.4, alpha)); // Pastel lighter shade
+    gradient.addColorStop(0.7, this.extractRGB(processedColor).toRGBA(alpha)); // Main color with alpha
+    const edge = this.pastelDarken(processedColor, 0.15, alpha); // Subtle darker edge
     gradient.addColorStop(0.92, edge); // Actual ring
     gradient.addColorStop(1.0, 'rgba(0,0,0,0)'); // Transparent feathered edge
 
@@ -141,7 +148,7 @@ export default class BubbleRenderer {
     // Main highlight
     ctx.beginPath();
     // Using RGBA instead of globalAlpha for iPad compatibility
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
     ctx.arc(pxX - radius * 0.43, pxY - radius * 0.49, radius * 0.2, 0, Math.PI * 2);
     ctx.fill();
 

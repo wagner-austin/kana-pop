@@ -8,7 +8,10 @@ const FALLBACK = ['#ffaaa5', '#ffd3b6', '#c7ceea', '#e2f0cb', '#b5ead7'] as cons
 
 let currentPalette: readonly string[] | null = null;
 export function setThemePalette(p: readonly string[]) {
-  currentPalette = p;
+  // Ensure the palette is non-empty before setting it
+  if (p && p.length > 0) {
+    currentPalette = p;
+  }
 }
 
 export function themeColours(): readonly string[] {

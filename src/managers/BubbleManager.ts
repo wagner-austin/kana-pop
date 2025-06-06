@@ -9,14 +9,18 @@ const log = new Logger('BubbleMgr');
 
 const randInt = (max: number) => Math.floor(Math.random() * max);
 const randColour = (): string => {
+  // Get colors from the theme system
   const colours = themeColours();
+
+  // Make sure we have at least one color
   if (colours.length === 0) {
-    return '#ffffff'; // Default color if no theme colors are available
+    return '#FFD1DC'; // Default color if somehow no theme colors are available
   }
-  // randInt(max) returns value from 0 to max-1.
-  // So, colours[randInt(colours.length)] should always be a valid string.
-  // Add ?? '#ffffff' for robustness, especially if noUncheckedIndexedAccess is on.
-  return colours[randInt(colours.length)] ?? '#ffffff';
+
+  // Select a random color from the palette
+  const randomIndex = randInt(colours.length);
+  // Provide a fallback in case the random index is out of bounds
+  return colours[randomIndex] ?? colours[0] ?? '#FFD1DC';
 };
 
 export default class BubbleManager {
