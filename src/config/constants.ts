@@ -25,7 +25,7 @@ export const FONT_COLOUR = TEXT_COLOUR_DARK;
 
 /* --- bubble and text size constants ---------------------------------- */
 /** Bubble size as a fraction of the smallest screen dimension */
-export const BUBBLE_SIZE_RATIO = 0.10;
+export const BUBBLE_SIZE_RATIO = 0.1;
 
 /** Kana text size as a fraction of bubble radius */
 export const KANA_FONT_RATIO = 0.85;
