@@ -52,6 +52,15 @@ export default class PlayScene extends BaseScene {
     applyDprTransform(this.ctx);
     this.bubbles.update(dt);
 
+    // Ensure at least one correct bubble remains on-screen
+    if (this.indicator) {
+      const targetRomaji = this.indicator.romaji;
+      if (!this.bubbles.entities.some((b) => b.romaji === targetRomaji)) {
+        const sym = Lang.symbols?.find((s) => s.roman === targetRomaji);
+        if (sym) this.bubbles.guarantee(sym);
+      }
+    }
+
     /* Update indicator but render it AFTER gameplay bubbles for top Z */
     if (this.indicator) {
       this.indicator.step(dt);
@@ -95,6 +104,9 @@ export default class PlayScene extends BaseScene {
     // Position slightly below top so rim visible even on notched phones
     const yNorm = rPx / h + 0.02;
     this.indicator = new IndicatorBubble(0.5, yNorm, colour, glyph, sym.roman, rPx);
+
+    // Immediately spawn at least one matching gameplay bubble
+    this.bubbles.guarantee(sym);
 
     // Play the romaji audio when indicator appears
     Sound.playRoman(sym.roman);

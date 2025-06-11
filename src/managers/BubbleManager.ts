@@ -5,6 +5,8 @@ import Lang from '../services/LanguageService';
 import Logger from '../utils/Logger';
 import { cssSize } from '../utils/canvasMetrics';
 
+import type { SymbolDef } from '@/types/language';
+
 const log = new Logger('BubbleMgr');
 
 const randInt = (max: number) => Math.floor(Math.random() * max);
@@ -69,9 +71,13 @@ export default class BubbleManager {
   }
 
   // ────────────────────────────────────────────────────────────
-  private spawn() {
+  /**
+   * Internal spawn helper.
+   * If `symbol` is provided, that specific symbol is used; otherwise a random one.
+   */
+  private spawn(symbol?: SymbolDef) {
     if (!Lang.symbols?.length) return;
-    const sym = Lang.symbols[randInt(Lang.symbols.length)]!;
+    const sym = symbol ?? Lang.symbols[randInt(Lang.symbols.length)]!;
     const glyph = Lang.randomGlyph(sym);
 
     const { w } = cssSize(this.canvas);
@@ -81,5 +87,10 @@ export default class BubbleManager {
 
     this.bubbles.push(new Bubble(x, y, randColour(), glyph, sym.roman, this.rPx));
     log.debug('spawn', { total: this.bubbles.length, roman: sym.roman });
+  }
+
+  /** Public helper to force-spawn at least one matching bubble for the given symbol */
+  guarantee(sym: SymbolDef) {
+    this.spawn(sym);
   }
 }
