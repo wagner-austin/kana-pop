@@ -1,6 +1,8 @@
 import type BubbleManager from '../managers/BubbleManager';
 import Logger from '../utils/Logger';
 
+import type Bubble from '@/entities/Bubble';
+
 const log = new Logger('Pointer');
 
 export default class PointerInput {
@@ -9,6 +11,10 @@ export default class PointerInput {
   constructor(
     private readonly canvas: HTMLCanvasElement,
     private readonly bubbles: BubbleManager,
+    /** Callback fired when a bubble is successfully tapped */
+    private readonly onTap: (b: Bubble) => void,
+    /** Optional single extra target (e.g. indicator bubble) */
+    private readonly extraTarget?: () => Bubble | null,
   ) {}
 
   attach() {
@@ -27,10 +33,26 @@ export default class PointerInput {
     const cy =
       'clientY' in e ? (e as PointerEvent).clientY : ((e as TouchEvent).touches[0]?.clientY ?? 0);
 
-    const hit = this.bubbles.hitTest(cx - rect.left, cy - rect.top);
+    let hit: Bubble | null = null;
+
+    /* First, check extra target (e.g., header indicator) so it has click priority */
+    if (this.extraTarget) {
+      const extra = this.extraTarget();
+      if (extra && extra.contains(cx - rect.left, cy - rect.top, rect.width, rect.height)) {
+        hit = extra;
+      }
+    }
+
+    /* If extra target not hit, fall back to gameplay bubbles */
+    if (!hit) {
+      hit = this.bubbles.hitTest(cx - rect.left, cy - rect.top) ?? null;
+    }
+
     if (hit) {
       hit.handleClick(performance.now() / 1000);
       log.debug('hit', { roman: hit.romaji });
+      // Notify scene of the successful tap
+      this.onTap(hit);
     }
   }
 }

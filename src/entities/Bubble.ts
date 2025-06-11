@@ -34,7 +34,7 @@ export default class Bubble {
   private textTransitionTime = 0;
 
   /** countdown timer for the white rim flash */
-  private flashTimer = 0;
+  public flashTimer = 0;
   public showingRomaji = false; // ← new
   private lastSpoken = -Infinity; // ← new
 
