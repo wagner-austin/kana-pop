@@ -7,13 +7,22 @@ import type Bubble from '@/entities/Bubble';
 import PointerInput from '@/input/PointerInput';
 import { cssSize, applyDprTransform } from '@/utils/canvasMetrics';
 import Lang from '@/services/LanguageService';
-import { themeColours, BUBBLE_SIZE_RATIO } from '@/config/constants';
+import {
+  themeColours,
+  BUBBLE_SIZE_RATIO,
+  MAX_DIFFICULTY,
+  STREAK_FOR_LEVEL_UP,
+} from '@/config/constants';
 import Sound from '@/services/SoundService';
+import StreakCounter from '@/ui/StreakCounter';
 
 export default class PlayScene extends BaseScene {
   private bubbles = new BubbleManager(this.ctx.canvas);
   private renderer = new BubbleRenderer();
   private indicator: IndicatorBubble | null = null;
+  private streak = 0;
+  private difficulty = 1;
+  private streakUI = new StreakCounter();
 
   /** Called by PointerInput for every successful bubble hit */
   private onBubbleTap = (b: Bubble): void => {
@@ -23,11 +32,17 @@ export default class PlayScene extends BaseScene {
     if (b === this.indicator) return;
 
     if (b.romaji === this.indicator.romaji) {
-      // ✔ correct – pick a new target
-      Sound.playPop(); // audible feedback
+      /* ✔ correct */
+      this.streak++;
+      this.updateDifficulty();
+      this.streakUI.set(this.streak);
+      Sound.playPop();
       this.spawnIndicator();
     } else {
-      // ✖ incorrect – brief red flash on indicator
+      /* ✖ incorrect */
+      this.streak = 0;
+      this.updateDifficulty();
+      this.streakUI.set(this.streak);
       this.indicator.flashTimer = 0.15;
     }
   };
@@ -44,6 +59,7 @@ export default class PlayScene extends BaseScene {
     this.bubbles.handleResize();
     this.spawnIndicator();
     this.input.attach();
+    this.streakUI.mount();
   }
 
   override update(dt: number) {
@@ -79,6 +95,7 @@ export default class PlayScene extends BaseScene {
     this.input.detach();
     this.bubbles.clear();
     this.indicator = null;
+    this.streakUI.unmount();
     super.exit();
   }
 
@@ -110,5 +127,16 @@ export default class PlayScene extends BaseScene {
 
     // Play the romaji audio when indicator appears
     Sound.playRoman(sym.roman);
+
+    // ensure UI streak starts at current value (0 on game start)
+    this.streakUI.set(this.streak);
+  }
+
+  /* ---------------- difficulty helper ---------------- */
+  private updateDifficulty() {
+    // Linear interpolation: every correct answer nudges difficulty upward a bit
+    // Full +1 tier after STREAK_FOR_LEVEL_UP correct taps
+    this.difficulty = Math.min(1 + this.streak / STREAK_FOR_LEVEL_UP, MAX_DIFFICULTY);
+    this.bubbles.setDifficulty(this.difficulty);
   }
 }

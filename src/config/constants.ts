@@ -1,5 +1,17 @@
 /** Pure static facts – no `window`, no services.  */
-export const SPAWN_INTERVAL = 1.2; // s
+export const SPAWN_INTERVAL = 2; // s
+/* ---------------- difficulty mechanic ---------------- */
+export const BUBBLE_BASE_SPEED = 0.11; // base upward speed (fraction of canvas height per second)
+export const SPEED_DIFFICULTY_CAP = 3; // up to this difficulty bubble speed increases
+export const MAX_DIFFICULTY = 5; // absolute cap for difficulty (spawns keep getting faster)
+export const STREAK_FOR_LEVEL_UP = 5; // every 5-in-a-row → +1 difficulty tier
+export const MAX_BUBBLES_PER_SPAWN = 1; // do not spawn more than this many at once
+export const BUBBLE_SPEED_VARIANCE = 0.14; // ±14% individual bubble speed variance
+export const ROMAJI_SPAWN_PROB = 0.4; // 25% chance bubble spawns showing romaji
+
+// 'up' → bubbles rise; 'down' → bubbles fall
+export const BUBBLE_DIRECTION: 'up' | 'down' = 'up';
+
 export const BUBBLE_ALPHA = 0.36;
 
 // Colours come from JSON so designers can edit without code-changes.

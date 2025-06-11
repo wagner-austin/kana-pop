@@ -1,6 +1,14 @@
 import Bubble from '../entities/Bubble';
 import { bubbleRadius } from '../utils/bubble';
-import { themeColours, SPAWN_INTERVAL } from '../config/constants';
+import {
+  themeColours,
+  SPAWN_INTERVAL,
+  SPEED_DIFFICULTY_CAP,
+  MAX_BUBBLES_PER_SPAWN,
+  BUBBLE_SPEED_VARIANCE,
+  ROMAJI_SPAWN_PROB,
+  BUBBLE_DIRECTION,
+} from '../config/constants';
 import Lang from '../services/LanguageService';
 import Logger from '../utils/Logger';
 import { cssSize } from '../utils/canvasMetrics';
@@ -29,6 +37,7 @@ export default class BubbleManager {
   private bubbles: Bubble[] = [];
   private spawnTimer = 0;
   private rPx = 0;
+  private difficulty = 1;
 
   constructor(private readonly canvas: HTMLCanvasElement) {
     const { w, h } = cssSize(canvas);
@@ -39,11 +48,27 @@ export default class BubbleManager {
     return this.bubbles;
   }
 
+  /** Scene pushes the difficulty multiplier (1 = normal). */
+  setDifficulty(mult: number) {
+    const oldSpeedMult = Math.min(this.difficulty, SPEED_DIFFICULTY_CAP);
+    const newSpeedMult = Math.min(mult, SPEED_DIFFICULTY_CAP);
+    const ratio = newSpeedMult / oldSpeedMult;
+    // Update difficulty first so spawn() uses latest value
+    this.difficulty = mult;
+    // Scale existing bubble speeds to preserve their random variance proportionally
+    this.bubbles.forEach((b) => (b.speed *= ratio));
+  }
+
   update(dt: number) {
     this.spawnTimer -= dt;
-    if (this.spawnTimer <= 0) {
-      this.spawn();
-      this.spawnTimer = SPAWN_INTERVAL;
+    // Keep spawning while timer laps negative to catch up even on big frame delays
+    while (this.spawnTimer <= 0) {
+      // Determine how many bubbles to create this tick
+      const batch = Math.min(1 + Math.floor(this.difficulty), MAX_BUBBLES_PER_SPAWN);
+      for (let i = 0; i < batch; i++) {
+        this.spawn();
+      }
+      this.spawnTimer += SPAWN_INTERVAL / this.difficulty; // more spawns as difficulty rises
     }
     this.bubbles.forEach((b) => b.step(dt));
     if (this.bubbles.some((b) => !b.active)) {
@@ -83,9 +108,18 @@ export default class BubbleManager {
     const { w } = cssSize(this.canvas);
     const rNorm = this.rPx / w;
     const x = rNorm + Math.random() * (1 - 2 * rNorm);
-    const y = 1 + rNorm;
+    const y = BUBBLE_DIRECTION === 'up' ? 1 + rNorm : -rNorm;
 
-    this.bubbles.push(new Bubble(x, y, randColour(), glyph, sym.roman, this.rPx));
+    const bubble = new Bubble(x, y, randColour(), glyph, sym.roman, this.rPx);
+    const speedMult = Math.min(this.difficulty, SPEED_DIFFICULTY_CAP);
+    const variance = 1 + (Math.random() * 2 - 1) * BUBBLE_SPEED_VARIANCE; // 0.7–1.3 when variance=0.3
+    bubble.speed *= speedMult * variance; // capped speed scaling with variance
+
+    // Randomly start some bubbles showing romaji side first
+    if (Math.random() < ROMAJI_SPAWN_PROB) {
+      bubble.showingRomaji = true;
+    }
+    this.bubbles.push(bubble);
     log.debug('spawn', { total: this.bubbles.length, roman: sym.roman });
   }
 

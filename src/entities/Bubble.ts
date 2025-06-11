@@ -8,6 +8,8 @@ import {
   BUBBLE_SQUASH_SCALE,
   BUBBLE_STRETCH_SCALE,
   TEXT_FADE_DURATION,
+  BUBBLE_BASE_SPEED,
+  BUBBLE_DIRECTION,
 } from '../config/constants';
 import Sound from '../services/SoundService';
 import Haptics from '../services/HapticService';
@@ -15,7 +17,8 @@ const log = new Logger('Bubble');
 
 export default class Bubble {
   active: boolean = true;
-  public speed = 0.2; // fraction of canvas height per second
+  /** vertical speed (fraction of canvas height per second) */
+  public speed = BUBBLE_BASE_SPEED;
   public r: number;
   /** current visual scale (1 == normal size) */
   private _scale = 1;
@@ -90,8 +93,13 @@ export default class Bubble {
   }
 
   step(dt: number) {
-    this.y -= this.speed * dt;
-    if (this.y < -0.05) this.active = false; // slight overshoot so it's fully gone
+    const dir = BUBBLE_DIRECTION === 'up' ? -1 : 1;
+    this.y += this.speed * dt * dir;
+    if (BUBBLE_DIRECTION === 'up') {
+      if (this.y < -0.05) this.active = false;
+    } else {
+      if (this.y > 1.05) this.active = false;
+    }
 
     // Tap spring animation state machine
     switch (this.animPhase) {

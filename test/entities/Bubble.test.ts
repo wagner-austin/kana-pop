@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import Bubble from '@/entities/Bubble';
+import { BUBBLE_BASE_SPEED } from '@/config/constants';
 
 const mockKana = 'テ';
 const mockRomaji = 'te';
@@ -7,13 +8,15 @@ const mockRomaji = 'te';
 describe('Bubble', () => {
   it('moves upward over time', () => {
     const b = new Bubble(0.5, 1.0, '#fff', mockKana, mockRomaji, 10);
-    b.step(1); // 1 s at 0.2 h/s → y decreases by 0.2
-    expect(b.y).toBeCloseTo(0.8);
+    b.step(1);
+    expect(b.y).toBeCloseTo(1 + BUBBLE_BASE_SPEED, 3);
   });
 
   it('becomes inactive when above top', () => {
-    const b = new Bubble(0.5, 0.0, '#fff', mockKana, mockRomaji, 10);
-    b.step(0.3); // -0.06 → y = -0.06 < -0.05 sentinel
+    const b = new Bubble(0.5, 1.04, '#fff', mockKana, mockRomaji, 10);
+    // choose dt so that y exceeds 1.05 threshold
+    const dt = 0.02 / BUBBLE_BASE_SPEED;
+    b.step(dt);
     expect(b.active).toBe(false);
   });
 
