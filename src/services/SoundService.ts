@@ -5,6 +5,7 @@ import Lang from '@/services/LanguageService';
 import Logger from '@/utils/Logger';
 import type { SymbolDef } from '@/types/language';
 import { requiresSpecialAudioHandling } from '@/utils/DeviceInfo';
+import { SFX_BASE_PATH, POP_SFX_FILES } from '@/config/constants';
 
 const log = new Logger('Sound');
 
@@ -30,11 +31,15 @@ class SoundService {
       log.info('SoundService: LanguageService is ready. Starting sound preload...');
 
       const soundUrls = Lang.symbols.map((s) => `${Lang.currentCode}/${s.audio}`);
-      if (soundUrls.length > 0) {
+      /* ── SFX preload (language-agnostic) ─────────────────────────── */
+      const sfxUrls = POP_SFX_FILES.map((f) => `${SFX_BASE_PATH}${f}`);
+      const allUrls = [...soundUrls, ...sfxUrls];
+
+      if (allUrls.length > 0) {
         try {
-          await this.preloadAll(soundUrls);
+          await this.preloadAll(allUrls);
           log.info(
-            `SoundService: Successfully preloaded ${soundUrls.length} sounds for language '${Lang.currentCode}'.`,
+            `SoundService: Successfully preloaded ${allUrls.length} sounds for language '${Lang.currentCode}'.`,
           );
         } catch (error) {
           log.error('SoundService: Error during sound preloading.', error);
@@ -198,6 +203,13 @@ class SoundService {
   playRoman(roman: string) {
     const audio = Lang.symbols.find((s: SymbolDef) => s.roman === roman)?.audio;
     if (audio) this.play(`${Lang.currentCode}/${audio}`);
+  }
+
+  playPop(): void {
+    const file =
+      POP_SFX_FILES[Math.floor(Math.random() * POP_SFX_FILES.length)] ?? POP_SFX_FILES[0];
+    // fire-and-forget
+    this.play(`${SFX_BASE_PATH}${file}`);
   }
 
   async preloadAll(paths: string[]) {

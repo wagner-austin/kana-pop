@@ -24,6 +24,7 @@ export default class PlayScene extends BaseScene {
 
     if (b.romaji === this.indicator.romaji) {
       // ✔ correct – pick a new target
+      Sound.playPop(); // audible feedback
       this.spawnIndicator();
     } else {
       // ✖ incorrect – brief red flash on indicator

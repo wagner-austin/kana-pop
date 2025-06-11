@@ -75,3 +75,9 @@ export const HAPTIC_THROTTLE_MS_PATTERN = 250; // ms, min time between haptic pa
 
 /** user-pref default (overridden by StorageService key 'kanaPop.haptics') */
 export const HAPTICS_DEFAULT_ENABLED = true;
+
+/* ---- Sound effects ------------------------------------------------- */
+/** Folder under /public/audio that stores short UI / game SFX */
+export const SFX_BASE_PATH = 'sfx/Pop/';
+/** Randomised “bubble pop” variants.  Add more files here ↴ */
+export const POP_SFX_FILES = ['pop1.mp3', 'pop2.mp3', 'pop3.mp3', 'pop4.mp3', 'pop5.mp3'] as const;
