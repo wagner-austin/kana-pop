@@ -1,7 +1,11 @@
+import Sound from '../services/SoundService';
+import Haptics from '../services/HapticService';
+
 import Bubble from './Bubble';
 
-import Sound from '@/services/SoundService';
-import Haptics from '@/services/HapticService';
+import Logger from '@/utils/Logger';
+
+const log = new Logger('Indicator');
 
 /**
  * A static “target” bubble drawn at the top of the screen that shows
@@ -28,6 +32,7 @@ export default class IndicatorBubble extends Bubble {
 
   /** Handle tap: cycle R→H→K → R … */
   override handleClick(_nowSec: number) {
+    log.info(`Indicator cycle tap. Mode was ${this.mode}`);
     // Haptic + spring animation regardless of mode
     Haptics.vibratePattern('pop').catch(() => {});
     this.triggerTapAnimation();
@@ -50,6 +55,9 @@ export default class IndicatorBubble extends Bubble {
 
     // brief white rim flash as visual confirmation
     this.flashTimer = 0.15;
+    log.info(
+      `Indicator now showing ${this.mode === 0 ? 'romaji' : this.mode === 1 ? 'hiragana' : 'katakana'}`,
+    );
   }
 
   /** Keep animation timers but cancel vertical drift. */

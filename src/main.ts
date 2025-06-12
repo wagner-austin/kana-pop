@@ -9,23 +9,119 @@ import Storage from './utils/StorageService';
 import Sound from './services/SoundService';
 
 /*───────────────────────────────────────────────────────────────────────────
-  Lightweight error overlay for on-site diagnostics.
+  Dockable debug console.
   Invoke with …/kana-pop/?debug
 ────────────────────────────────────────────────────────────────────────────*/
 if (typeof window !== 'undefined' && window.location.search.includes('debug')) {
-  const overlay = document.createElement('pre');
-  overlay.style.cssText =
-    'position:fixed;inset:0;z-index:99999;background:#000C;color:#0F0;' +
-    'padding:8px;font:12px/1.4 monospace;overflow:auto;white-space:pre-wrap;';
-  overlay.textContent = '🚦 kana-pop live debug console (first error wins)\n\n';
-  if (document.readyState !== 'loading') {
-    document.body.append(overlay);
-  } else {
-    document.addEventListener('DOMContentLoaded', () => document.body.append(overlay), {
-      once: true,
-    });
-  }
+  /* ── root elements ───────────────────────────── */
+  const toggle = document.createElement('button');
+  const pane = document.createElement('pre');
 
+  /* button – always visible, minimal footprint */
+  toggle.textContent = '🚦';
+  toggle.title = 'Show / hide debug console';
+  toggle.style.cssText =
+    'position:fixed;bottom:16px;left:16px;width:44px;height:44px;' +
+    'z-index:99998;font-size:24px;background:#000C;color:#0F0;border-radius:22px;' +
+    'border:1px solid #0F0;cursor:pointer;user-select:none';
+
+  /* log pane – hidden until first click */
+  pane.style.cssText =
+    'position:fixed;bottom:72px;left:16px;max-width:90vw;max-height:70vh;' +
+    'width:60vw;height:40vh;resize:both;' +
+    'z-index:99999;background:#000C;color:#0F0;margin:0;padding:0;' +
+    'font:12px/1.4 monospace;overflow:auto;white-space:pre-wrap;box-sizing:border-box;' +
+    'display:none;border:1px solid #0F0;border-radius:4px;';
+
+  /* header */
+  const header = document.createElement('div');
+  header.style.cssText =
+    'position:sticky;top:0;left:0;right:0;height:20px;background:#030;' +
+    'color:#9f9;padding:2px 6px;font-weight:bold;cursor:move;border-bottom:1px solid #0F0;user-select:none';
+  header.textContent = 'Debug log';
+  pane.append(header);
+
+  /* log area */
+  const logArea = document.createElement('span');
+  logArea.textContent = '🚦 kana-pop live debug console (first error wins)\n\n';
+  pane.append(logArea);
+
+  /* drag handle (overlay header) */
+  let dragX = 0,
+    dragY = 0,
+    down = false;
+  const stopDrag = () => {
+    down = false;
+  };
+  header.addEventListener('pointerdown', (e) => {
+    e.stopPropagation();
+    down = true;
+    dragX = e.clientX - pane.offsetLeft;
+    dragY = e.clientY - pane.offsetTop;
+    header.setPointerCapture(e.pointerId);
+  });
+  header.addEventListener('pointermove', (e) => {
+    e.stopPropagation();
+    if (!down) return;
+    pane.style.left = `${e.clientX - dragX}px`;
+    pane.style.bottom = 'auto';
+    pane.style.top = `${e.clientY - dragY}px`;
+  });
+  header.addEventListener('pointerup', stopDrag);
+  header.addEventListener('pointercancel', stopDrag);
+
+  document.addEventListener(
+    'DOMContentLoaded',
+    () => {
+      document.body.append(toggle, pane);
+    },
+    { once: true },
+  );
+
+  /* filtering */
+  let verbose = false;
+  const whitelist = [
+    'Bubble',
+    'Indicator',
+    'Streak',
+    'Level',
+    'Pointer', // input handler
+    'spawn', // bubble spawns
+    'Tap', // pointer taps
+    'correct',
+    'wrong',
+    'miss',
+    'SM', // state-machine transitions
+    'BubbleMgr',
+  ];
+  const updateHeader = () => {
+    header.textContent = verbose ? 'Debug log - ALL' : 'Debug log - GAMEPLAY';
+  };
+  updateHeader();
+
+  /* toggle visibility and verbosity */
+  toggle.addEventListener('click', (e) => {
+    if (e.shiftKey) {
+      verbose = !verbose;
+      updateHeader();
+      e.stopPropagation();
+      e.preventDefault();
+      return;
+    }
+    e.stopPropagation();
+    e.preventDefault();
+    pane.style.display = pane.style.display === 'none' ? 'block' : 'none';
+  });
+
+  /* prevent pointerdown */
+  toggle.addEventListener('pointerdown', (e) => e.stopPropagation());
+  pane.addEventListener('pointerdown', (e) => e.stopPropagation());
+
+  /* log helper */
+  const writeLine = (line: string) => {
+    logArea.textContent += line + '\n';
+    pane.scrollTop = pane.scrollHeight;
+  };
   const dump = (label: string, e: unknown) => {
     const msg =
       e instanceof Error && e.stack
@@ -33,19 +129,71 @@ if (typeof window !== 'undefined' && window.location.search.includes('debug')) {
         : typeof e === 'string'
           ? e
           : JSON.stringify(e, null, 2);
-    overlay.textContent += `🛑 ${label}: ${msg}\n`;
+    writeLine(`🛑 ${label}: ${msg}`);
+    pane.style.display = 'block'; // auto-open on first error
   };
 
+  /* wire error listeners */
   window.addEventListener('error', (ev) =>
     dump('error', (ev as ErrorEvent).error ?? (ev as ErrorEvent).message),
   );
   window.addEventListener('unhandledrejection', (ev) =>
     dump('promise', (ev as PromiseRejectionEvent).reason),
   );
+
+  /* intercept console output */
+  /* eslint-disable no-console */
+  (['log', 'info', 'warn', 'error'] as const).forEach((level) => {
+    const orig = console[level];
+    console[level] = (...args: unknown[]) => {
+      orig.apply(console, args as []);
+      const flat = args
+        .map((a) => {
+          if (typeof a !== 'string') {
+            return typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a);
+          }
+
+          // Strip console %c tokens while retaining readable text.
+          let s = a.startsWith('%c') ? a.replace(/%c/g, '') : a;
+
+          // Skip pure style strings (they usually accompany %c).
+          if (/^(?:color|background|font|padding|border)/i.test(s.trim())) {
+            return null;
+          }
+          return s.trim();
+        })
+        .filter(Boolean) as string[];
+      if (flat.length === 0) return; // no meaningful text
+      const joined = flat.join(' ');
+      const shouldShow = verbose || whitelist.some((tag) => joined.includes(tag));
+      if (!shouldShow) return;
+      const prefix = level === 'error' ? '🛑' : level === 'warn' ? '⚠️' : '🔹';
+      writeLine(`${prefix} ${joined}`);
+    };
+  });
+  /* eslint-enable no-console */
+}
+
+/*───────────────────────────────────────────────────────────────────────────
+  DEV-only helpers: quick way to see console without staging a real failure
+────────────────────────────────────────────────────────────────────────────*/
+if (import.meta.env.DEV && typeof window !== 'undefined') {
+  // eslint-disable-next-line no-console
+  console.info(
+    `%c[dev] debug overlay 👉  ${location.origin}${import.meta.env.BASE_URL}?debug`,
+    'color:#0f0',
+  );
+  window.addEventListener('keydown', (e) => {
+    if (e.altKey && e.shiftKey && e.code === 'KeyE') {
+      throw new Error('💥 test error (Alt+Shift+E)');
+    }
+  });
 }
 
 let sm: StateMachine | null = null;
 let bg: BackgroundManager | null = null;
+let raf = 0;
+let last = performance.now();
 
 // Get canvas references first but don't start rendering yet
 const canvas = document.querySelector<HTMLCanvasElement>('#game');
@@ -98,8 +246,6 @@ ResizeService.watchCanvas(canvas);
   raf = requestAnimationFrame(loop);
 })();
 
-let raf = 0;
-let last = performance.now();
 function loop(now: number) {
   const dt = (now - last) / 1000;
   last = now;

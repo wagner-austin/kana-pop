@@ -15,6 +15,9 @@ import {
 } from '@/config/constants';
 import Sound from '@/services/SoundService';
 import StreakCounter from '@/ui/StreakCounter';
+import Logger from '@/utils/Logger';
+
+const log = new Logger('Play');
 
 export default class PlayScene extends BaseScene {
   private bubbles = new BubbleManager(this.ctx.canvas);
@@ -34,12 +37,14 @@ export default class PlayScene extends BaseScene {
     if (b.romaji === this.indicator.romaji) {
       /* ✔ correct */
       this.streak++;
+      log.info(`correct tap: ${b.romaji} streak=${this.streak}`);
       this.updateDifficulty();
       this.streakUI.set(this.streak);
       Sound.playPop();
       this.spawnIndicator();
     } else {
       /* ✖ incorrect */
+      log.warn(`wrong tap: got ${b.romaji} expected ${this.indicator.romaji}`);
       this.streak = 0;
       this.updateDifficulty();
       this.streakUI.set(this.streak);
@@ -58,6 +63,7 @@ export default class PlayScene extends BaseScene {
     await super.enter();
     this.bubbles.handleResize();
     this.spawnIndicator();
+    log.info('gameplay start: first indicator spawned');
     this.input.attach();
     this.streakUI.mount();
   }
@@ -111,6 +117,7 @@ export default class PlayScene extends BaseScene {
     const { w, h } = cssSize(this.ctx.canvas);
 
     const sym = Lang.symbols[Math.floor(Math.random() * Lang.symbols.length)]!;
+    log.debug(`spawnIndicator: target ${sym.roman}`);
     const rPx = Math.min(w, h) * BUBBLE_SIZE_RATIO; // same rule as game bubbles
     const palette = themeColours();
     const colour = palette[Math.floor(Math.random() * palette.length)] ?? '#FFD1DC';

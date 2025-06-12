@@ -40,7 +40,7 @@ export const FONT_COLOUR = TEXT_COLOUR_DARK;
 
 /* --- bubble and text size constants ---------------------------------- */
 /** Bubble size as a fraction of the smallest screen dimension */
-export const BUBBLE_SIZE_RATIO = 0.1;
+export const BUBBLE_SIZE_RATIO = 0.11;
 
 /** Kana text size as a fraction of bubble radius */
 export const KANA_FONT_RATIO = 0.85;
@@ -49,7 +49,7 @@ export const KANA_FONT_RATIO = 0.85;
 export const ROMAJI_FONT_RATIO = 0.65;
 
 /** Minimum seconds between successive pronunciations of the *same* bubble */
-export const AUDIO_COOLDOWN = 0.4;
+export const AUDIO_COOLDOWN = 0.2;
 
 /* ---- haptic ---------------------------------------------------------- */
 export const HAPTIC_DURATION_MS = 50; // increased from 15ms for better Android feedback

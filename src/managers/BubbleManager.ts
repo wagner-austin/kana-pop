@@ -52,6 +52,11 @@ export default class BubbleManager {
   setDifficulty(mult: number) {
     const oldSpeedMult = Math.min(this.difficulty, SPEED_DIFFICULTY_CAP);
     const newSpeedMult = Math.min(mult, SPEED_DIFFICULTY_CAP);
+    if (newSpeedMult !== oldSpeedMult) {
+      log.info(
+        `Level up: speed multiplier ${oldSpeedMult.toFixed(2)} → ${newSpeedMult.toFixed(2)}`,
+      );
+    }
     const ratio = newSpeedMult / oldSpeedMult;
     // Update difficulty first so spawn() uses latest value
     this.difficulty = mult;
