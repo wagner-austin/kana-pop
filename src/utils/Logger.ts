@@ -11,8 +11,14 @@ const COLORS: Record<Exclude<LogLevel, 'off'>, string> = {
   error: '#e54242',
 };
 
-// Logging is active only in development to allow Vite to tree-shake it in production.
-const ACTIVE = import.meta.env.DEV;
+// Logging is active in development *or* when URL includes ?debug so that
+// production GitHub Pages builds can emit logs when the in-app debug console
+// is manually enabled.
+// Vite replaces `import.meta.env.DEV` with a boolean literal at build time,
+// but the logical OR keeps the runtime check intact without defeating
+// tree-shaking for builds where ?debug is not present.
+const ACTIVE = (import.meta.env.DEV ?? false) ||
+  (typeof window !== 'undefined' && window.location.search.includes('debug'));
 
 class Logger {
   // Read and cache the log level from localStorage at boot.
