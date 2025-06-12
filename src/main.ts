@@ -8,6 +8,42 @@ import Loader from './services/AssetLoader';
 import Storage from './utils/StorageService';
 import Sound from './services/SoundService';
 
+/*───────────────────────────────────────────────────────────────────────────
+  Lightweight error overlay for on-site diagnostics.
+  Invoke with …/kana-pop/?debug
+────────────────────────────────────────────────────────────────────────────*/
+if (typeof window !== 'undefined' && window.location.search.includes('debug')) {
+  const overlay = document.createElement('pre');
+  overlay.style.cssText =
+    'position:fixed;inset:0;z-index:99999;background:#000C;color:#0F0;' +
+    'padding:8px;font:12px/1.4 monospace;overflow:auto;white-space:pre-wrap;';
+  overlay.textContent = '🚦 kana-pop live debug console (first error wins)\n\n';
+  if (document.readyState !== 'loading') {
+    document.body.append(overlay);
+  } else {
+    document.addEventListener('DOMContentLoaded', () => document.body.append(overlay), {
+      once: true,
+    });
+  }
+
+  const dump = (label: string, e: unknown) => {
+    const msg =
+      e instanceof Error && e.stack
+        ? e.stack
+        : typeof e === 'string'
+          ? e
+          : JSON.stringify(e, null, 2);
+    overlay.textContent += `🛑 ${label}: ${msg}\n`;
+  };
+
+  window.addEventListener('error', (ev) =>
+    dump('error', (ev as ErrorEvent).error ?? (ev as ErrorEvent).message),
+  );
+  window.addEventListener('unhandledrejection', (ev) =>
+    dump('promise', (ev as PromiseRejectionEvent).reason),
+  );
+}
+
 let sm: StateMachine | null = null;
 let bg: BackgroundManager | null = null;
 

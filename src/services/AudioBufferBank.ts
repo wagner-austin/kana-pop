@@ -64,17 +64,30 @@ export default class AudioBufferBank {
   async fetch(url: string): Promise<AudioBuffer> {
     if (this.bank.has(url)) return this.bank.get(url)!;
 
-    /* attempt to fetch & decode */
+    /* attempt to fetch & decode – with MIME/type sanity-check */
     try {
-      const data = await (await fetch(url)).arrayBuffer();
+      const resp = await fetch(url, { cache: 'force-cache' });
+
+      // Explicit network error reporting
+      if (!resp.ok) {
+        throw new Error(`HTTP ${resp.status} ${resp.statusText}`);
+      }
+
+      const ctype = resp.headers.get('content-type')?.toLowerCase() ?? '';
+      if (!ctype.startsWith('audio/')) {
+        // Most captive portals: text/html; some filters: application/octet-stream
+        throw new Error(`Non-audio response (${ctype || 'no Content-Type'})`);
+      }
+
+      const data = await resp.arrayBuffer();
       const ctx = await this.ensureContext(); // ⬅️ running for sure
 
       const buf = await ctx.decodeAudioData(data);
       this.bank.set(url, buf);
       return buf;
     } catch (error) {
-      log.error(`decodeAudioData failed for ${url}`, error);
-      // Propagate the error so SoundService can potentially use a fallback
+      log.error(`AudioBufferBank.fetch failed for ${url}`, error);
+      // Propagate so callers can try <audio> fallback or ignore
       throw error;
     }
   }
