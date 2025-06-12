@@ -115,12 +115,12 @@ export default class PlayScene extends BaseScene {
     const palette = themeColours();
     const colour = palette[Math.floor(Math.random() * palette.length)] ?? '#FFD1DC';
 
-    // Random kana glyph for reference bubble
-    const glyph = Lang.randomGlyph(sym);
+    const hira = (sym.glyphs as Record<string, string>)['hiragana']!;
+    const kata = (sym.glyphs as Record<string, string>)['katakana']!;
 
     // Position slightly below top so rim visible even on notched phones
     const yNorm = rPx / h + 0.02;
-    this.indicator = new IndicatorBubble(0.5, yNorm, colour, glyph, sym.roman, rPx);
+    this.indicator = new IndicatorBubble(0.5, yNorm, colour, hira, kata, sym.roman, rPx);
 
     // Immediately spawn at least one matching gameplay bubble
     this.bubbles.guarantee(sym);
