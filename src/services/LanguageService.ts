@@ -35,9 +35,21 @@ class LanguageService {
 
   async load(code: string = this.defaultCode): Promise<void> {
     const manifest = await LanguageRepository.manifest();
-    const manifestEntry =
-      manifest.find((m) => m.code === code) ?? manifest.find((m) => m.code === this.defaultCode);
-    if (!manifestEntry) throw new Error('LanguageService: manifest empty');
+    // Attempt to locate the desired language in the manifest, falling back sensibly if missing.
+    let manifestEntry = manifest.find((m) => m.code === code);
+
+    // If requested language is not present, fall back to the service default or the first available entry.
+    if (!manifestEntry) {
+      log.warn(
+        `Language code '${code}' not found in manifest; falling back to '${this.defaultCode}'.`,
+      );
+      manifestEntry = manifest.find((m) => m.code === this.defaultCode) ?? manifest[0];
+    }
+
+    if (!manifestEntry) {
+      // Still nothing?  Manifest itself must be empty – escalate.
+      throw new Error('LanguageService: manifest empty');
+    }
 
     const loaded = await LanguageRepository.language(manifestEntry.code);
 

@@ -37,7 +37,8 @@ if (typeof window !== 'undefined' && window.location.search.includes('debug')) {
   const header = document.createElement('div');
   header.style.cssText =
     'position:sticky;top:0;left:0;right:0;height:20px;background:#030;' +
-    'color:#9f9;padding:2px 6px;font-weight:bold;cursor:move;border-bottom:1px solid #0F0;user-select:none';
+    'color:#9f9;padding:2px 6px;font-weight:bold;cursor:move;border-bottom:1px solid #0F0;user-select:none;' +
+    'touch-action:none';
   header.textContent = 'Debug log';
   pane.append(header);
 
@@ -49,13 +50,15 @@ if (typeof window !== 'undefined' && window.location.search.includes('debug')) {
   /* drag handle (overlay header) */
   let dragX = 0,
     dragY = 0,
-    down = false;
+    down = false,
+    moved = false;
   const stopDrag = () => {
     down = false;
   };
   header.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
     down = true;
+    moved = false;
     dragX = e.clientX - pane.offsetLeft;
     dragY = e.clientY - pane.offsetTop;
     header.setPointerCapture(e.pointerId);
@@ -63,11 +66,21 @@ if (typeof window !== 'undefined' && window.location.search.includes('debug')) {
   header.addEventListener('pointermove', (e) => {
     e.stopPropagation();
     if (!down) return;
+    moved = true;
     pane.style.left = `${e.clientX - dragX}px`;
     pane.style.bottom = 'auto';
     pane.style.top = `${e.clientY - dragY}px`;
   });
-  header.addEventListener('pointerup', stopDrag);
+  header.addEventListener('pointerup', (e) => {
+    stopDrag();
+    // Treat a tap (no movement) as a verbosity toggle for mobile users
+    if (!moved) {
+      verbose = !verbose;
+      updateHeader();
+      e.stopPropagation();
+      e.preventDefault();
+    }
+  });
   header.addEventListener('pointercancel', stopDrag);
 
   document.addEventListener(

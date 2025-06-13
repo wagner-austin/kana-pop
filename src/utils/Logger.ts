@@ -17,7 +17,8 @@ const COLORS: Record<Exclude<LogLevel, 'off'>, string> = {
 // Vite replaces `import.meta.env.DEV` with a boolean literal at build time,
 // but the logical OR keeps the runtime check intact without defeating
 // tree-shaking for builds where ?debug is not present.
-const ACTIVE = (import.meta.env.DEV ?? false) ||
+const ACTIVE =
+  (import.meta.env.DEV ?? false) ||
   (typeof window !== 'undefined' && window.location.search.includes('debug'));
 
 class Logger {
