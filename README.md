@@ -1,6 +1,44 @@
 # Kana Pop!
 
-<!-- Project description will go here -->
+A browser game for learning Japanese kana. Bubbles carrying a glyph drift up the
+screen; tap the one matching the prompt before it escapes. Each symbol has both
+its hiragana and katakana form plus an audio clip, so the same data drives
+reading practice in either script.
+
+Built with TypeScript + Vite, tested with Vitest, and installable as a PWA (it
+ships a web manifest and the full icon set).
+
+**The language layer is data, not code.** `src/data/lang/index.json` lists the
+available languages and `src/data/lang/<code>.json` holds that language's
+symbols — each entry pairing its glyph forms, its romanisation, an audio
+filename and a category. Japanese is implemented; Arabic is registered in the
+index with `direction: "rtl"`, so right-to-left is a known case rather than an
+afterthought.
+
+## Running it
+
+```bash
+pnpm install
+make dev        # vite dev server, opens a browser
+make build      # production build
+make preview    # serve the built output
+make lint       # eslint
+make test       # vitest
+```
+
+`make help` lists every target. The Makefile wraps the `pnpm` scripts in
+`package.json`, so `pnpm dev` / `pnpm build` work identically if you prefer.
+
+## Adding a language
+
+No code change is required for a new symbol set:
+
+1. Add `src/data/lang/<code>.json` with a `code`, a display `name`, and a
+   `symbols` array — each entry carrying its `glyphs`, `roman`, `audio`
+   filename and `category`.
+2. Drop the audio clips into the assets tree under the filenames referenced.
+3. Register the language in `src/data/lang/index.json` with its `code`, `name`
+   and `direction`.
 
 ## Architecture
 
