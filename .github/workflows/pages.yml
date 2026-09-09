@@ -16,13 +16,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # No version pins here on purpose: pnpm comes from package.json's
+      # packageManager field (the single authority), and Node matches ci.yml.
+      # The floating latest/latest pair this carried left the post-job pnpm
+      # cache save pointing at a store path that did not exist, which marked
+      # an otherwise-successful deploy as a failed job.
       - uses: pnpm/action-setup@v3
-        with:
-          version: latest
 
       - uses: actions/setup-node@v4
         with:
-          node-version: latest
+          node-version: '22'
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
