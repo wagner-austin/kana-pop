@@ -14,15 +14,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # No version here on purpose: the action reads the pinned
+      # `packageManager` field from package.json, which is the single
+      # authority. The floating `latest` this carried is how pnpm 10.x's
+      # Node >= 22.13 requirement arrived uninvited and broke the build.
       - name: Set up pnpm
         uses: pnpm/action-setup@v3
-        with:
-          version: latest # You can specify a pnpm version like 8 if needed
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20' # Specify your project's Node.js version if different
+          # 22, matching @types/node ^22 and the tests' use of node:sqlite,
+          # which ships unflagged from 22.13. The previous '20' had neither.
+          node-version: '22'
           cache: 'pnpm'
 
       - name: Install dependencies
